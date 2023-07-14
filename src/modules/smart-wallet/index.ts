@@ -1,17 +1,16 @@
-import { Base } from '../../base';
-import { SampleOptions, SampleResponse } from './types';
+import { Base } from "../../base";
+import { SampleOptions, SampleResponse } from "./types";
 
-const resourceName = 'smartWallet';
+const resourceName = "smartWallet";
 
 export class SmartWallet extends Base {
+	init(): Promise<void> {
+		//execute initazation steps
+		return;
+	}
 
-  init(): Promise<void> {
-    //execute initazation steps
-    return
-  }
-
-  sampleFunc(sampleOptions: SampleOptions):SampleResponse{
-    return {retArg: "sampleResponse"}
-  }
-
+	sampleFunc(sampleOptions: SampleOptions): SampleResponse {
+		return { retArg: "sampleResponse1" };
+	}
 }
+

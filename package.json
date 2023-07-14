@@ -1,27 +1,31 @@
 {
-  "name": "bastion",
-  "version": "1.0.0",
-  "description": "",
-  "main": "dist/index.js",
-  "module": "dist/index.m.js",
-  "unpkg": "dist/index.umd.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "rm -rf dist && microbundle --tsconfig tsconfig.json --no-sourcemap",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/indorseio/bastion.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/indorseio/bastion/issues"
-  },
-  "homepage": "https://github.com/indorseio/bastion#readme",
-  "devDependencies": {
-    "microbundle": "^0.15.1",
-    "typescript": "^5.1.6"
-  }
+	"name": "bastion",
+	"version": "1.0.0",
+	"description": "",
+	"main": "dist/index.js",
+	"module": "dist/index.m.js",
+	"unpkg": "dist/index.umd.js",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"build": "rm -rf dist && microbundle --tsconfig tsconfig.json --no-sourcemap",
+		"test": "jest"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/indorseio/bastion.git"
+	},
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/indorseio/bastion/issues"
+	},
+	"homepage": "https://github.com/indorseio/bastion#readme",
+	"devDependencies": {
+		"@types/jest": "^29.5.3",
+		"jest": "^29.6.1",
+		"microbundle": "^0.15.1",
+		"ts-jest": "^29.1.1",
+		"typescript": "^5.1.6"
+	}
 }
+
