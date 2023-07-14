@@ -1,7 +1,13 @@
 export declare type SampleOptions = {
-    sampleArg: string
-}
+	sampleArg: string;
+};
 
 export declare type SampleResponse = {
-    retArg: string
-}
+	retArg: string;
+};
+
+export declare type WalletStruct = {
+	privateKey: string;
+	rpcUrl: string;
+};
+
