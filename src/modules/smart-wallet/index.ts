@@ -30,6 +30,8 @@ export class SmartWallet extends Base {
 		const wallet = new Wallet(params.privateKey, rpcProvider);
 		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, rpcProvider);
 		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, rpcProvider);
+
+		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [wallet.address, 0])]);
 
 		// console.log("Generated initCode:", initCode);
@@ -47,6 +49,23 @@ export class SmartWallet extends Base {
 
 		// console.log("Calculated sender address:", senderAddress);
 		return senderAddress;
+	}
+
+	async initSmartAccount(params: WalletStruct): Promise<boolean> {
+		// console.log("params:", params);
+		if (!params.privateKey || !params.rpcUrl) {
+			throw new Error("Missing required params. You need to send a private key and an RPC URL");
+		}
+		const rpcProvider = new StaticJsonRpcProvider(params.rpcUrl);
+		const wallet = new Wallet(params.privateKey, rpcProvider);
+		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, rpcProvider);
+		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, wallet);
+
+		const createTx = await simpleAccountFactory.createAccount(wallet.address, 0);
+		await createTx.wait();
+		console.log("Created smart account", createTx.hash);
+
+		return true;
 	}
 }
 
