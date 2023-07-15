@@ -17,19 +17,20 @@ export class SmartWallet extends Base {
 		return;
 	}
 
-	sampleFunc(sampleOptions: SampleOptions): SampleResponse {
-		return { retArg: "sampleResponse1" };
-	}
-
-	async getSmartAccountAddress(params: WalletStruct): Promise<string> {
-		// console.log("params:", params);
+	private async initParams(params: WalletStruct) {
 		if (!params.privateKey || !params.rpcUrl) {
 			throw new Error("Missing required params. You need to send a private key and an RPC URL");
 		}
 		const rpcProvider = new StaticJsonRpcProvider(params.rpcUrl);
 		const wallet = new Wallet(params.privateKey, rpcProvider);
 		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, rpcProvider);
-		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, rpcProvider);
+		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, wallet);
+
+		return { rpcProvider, wallet, entryPoint, simpleAccountFactory };
+	}
+
+	async getSmartAccountAddress(params: WalletStruct): Promise<string> {
+		const { wallet, entryPoint, simpleAccountFactory } = await this.initParams(params);
 
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [wallet.address, 0])]);
@@ -52,14 +53,7 @@ export class SmartWallet extends Base {
 	}
 
 	async initSmartAccount(params: WalletStruct): Promise<boolean> {
-		// console.log("params:", params);
-		if (!params.privateKey || !params.rpcUrl) {
-			throw new Error("Missing required params. You need to send a private key and an RPC URL");
-		}
-		const rpcProvider = new StaticJsonRpcProvider(params.rpcUrl);
-		const wallet = new Wallet(params.privateKey, rpcProvider);
-		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, rpcProvider);
-		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, wallet);
+		const { wallet, entryPoint, simpleAccountFactory } = await this.initParams(params);
 
 		const createTx = await simpleAccountFactory.createAccount(wallet.address, 0);
 		await createTx.wait();
