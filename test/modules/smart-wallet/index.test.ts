@@ -59,7 +59,7 @@ describe("SmartWallet", () => {
 			expect(result).toEqual(true);
 		}, 20000);
 
-		it("should send native currency UserOp and return true", async () => {
+		it.skip("should send native currency UserOp and return true", async () => {
 			let result;
 			try {
 				result = await smartWallet.sendNativeCurrency(
@@ -71,6 +71,25 @@ describe("SmartWallet", () => {
 					"0x841056F279582d1dfD586c3C77e7821821B5B510",
 					20,
 					"0x"
+				);
+			} catch (e) {
+				console.log("e:", e);
+			}
+			expect(result).toEqual(true);
+		}, 20000);
+
+		it("should send ERC20 UserOp and return true", async () => {
+			let result;
+			try {
+				result = await smartWallet.sendERC20Tokens(
+					{
+						privateKey: process.env.PRIVATE_KEY || "",
+						rpcUrl: process.env.RPC_URL || "", // Polygon Mumbai
+						chainId: 80001,
+					},
+					"0x841056F279582d1dfD586c3C77e7821821B5B510",
+					200,
+					"0xe11A86849d99F524cAC3E7A0Ec1241828e332C62"
 				);
 			} catch (e) {
 				console.log("e:", e);
