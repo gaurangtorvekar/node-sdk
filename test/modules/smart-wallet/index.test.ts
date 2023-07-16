@@ -96,6 +96,37 @@ describe("SmartWallet", () => {
 			}
 			expect(result).toEqual(true);
 		}, 20000);
+
+		it("should return the balance of native currency", async () => {
+			let result;
+			try {
+				result = await smartWallet.getNativeCurrencyBalance({
+					privateKey: process.env.PRIVATE_KEY || "",
+					rpcUrl: process.env.RPC_URL || "", // Polygon Mumbai
+					chainId: 80001,
+				});
+			} catch (e) {
+				console.log("e:", e);
+			}
+			expect(result).toBeGreaterThan(0);
+		});
+
+		it("should return the balance of ERC20 tokens", async () => {
+			let result;
+			try {
+				result = await smartWallet.getERC20TokenBalance(
+					{
+						privateKey: process.env.PRIVATE_KEY || "",
+						rpcUrl: process.env.RPC_URL || "", // Polygon Mumbai
+						chainId: 80001,
+					},
+					"0xe11A86849d99F524cAC3E7A0Ec1241828e332C62"
+				);
+			} catch (e) {
+				console.log("e:", e);
+			}
+			expect(result).toBeGreaterThan(0);
+		});
 	});
 });
 

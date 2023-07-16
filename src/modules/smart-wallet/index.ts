@@ -169,5 +169,26 @@ export class SmartWallet extends Base {
 		const userOperation = await this.prepareTransaction(params, tokenAddress, 0, data);
 		return this.sendTransaction(params, userOperation);
 	}
+
+	async getNativeCurrencyBalance(params: WalletStruct): Promise<number> {
+		const { rpcProvider } = await this.initParams(params);
+		const smartAccountAddress = await this.getSmartAccountAddress(params);
+		const balance = await rpcProvider.getBalance(smartAccountAddress);
+		const formatted_balance = Math.floor(parseFloat(utils.formatEther(balance)) * 100) / 100;
+		console.log("Native currency balance: ", formatted_balance);
+
+		return formatted_balance;
+	}
+
+	async getERC20TokenBalance(params: WalletStruct, tokenAddress: string): Promise<number> {
+		const { rpcProvider } = await this.initParams(params);
+		const erc20Token = ERC20__factory.connect(tokenAddress, rpcProvider);
+		const smartAccountAddress = await this.getSmartAccountAddress(params);
+		const balance = await erc20Token.balanceOf(smartAccountAddress);
+		const formatted_balance = Math.floor(parseFloat(utils.formatEther(balance)) * 100) / 100;
+		console.log("ERC20 token balance: ", formatted_balance);
+
+		return formatted_balance;
+	}
 }
 
