@@ -68,27 +68,25 @@ export class SmartWallet extends Base {
 		return true;
 	}
 
-	// Note - this function makes the Smart Account contract pay for the gas. We are NOT using the Pimlico paymaster, we are just using their bundler
-	// Need to fund the Smart Contract or the bundler will throw an error
-	async sendNativeCurrency(params: WalletStruct, to: string, value: number, data?: string): Promise<boolean> {
+	private async prepareTransaction(params: WalletStruct, to: string, value: number, data?: string): Promise<UserOperationStruct> {
 		const { rpcProvider, wallet, entryPoint } = await this.initParams(params);
 
 		const smartAccountAddress = await this.getSmartAccountAddress(params);
-		console.log("sendNativeCurrency| Smart wallet address: ", smartAccountAddress);
+		console.log("| Smart wallet address: ", smartAccountAddress);
 
 		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, rpcProvider);
 
 		const callData = simpleAccount.interface.encodeFunctionData("execute", [to, value, data]);
-		console.log("sendNativeCurrency| Call data: ", callData);
+		console.log("| Call data: ", callData);
 
 		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, rpcProvider);
 		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [wallet.address, 0])]);
 
-		console.log("sendNativeCurrency| Init code: ", initCode);
+		console.log("| Init code: ", initCode);
 
 		const gasPrice = await rpcProvider.getGasPrice();
 		const nonce = await simpleAccount.callStatic.getNonce();
-		console.log("sendNativeCurrency| Nonce: ", nonce);
+		console.log("| Nonce: ", nonce);
 
 		//Check if the smart account contract has been deployed
 		const contractCode = await rpcProvider.getCode(smartAccountAddress);
@@ -106,10 +104,17 @@ export class SmartWallet extends Base {
 			paymasterAndData: "0x",
 			signature: "0x",
 		};
+
 		const signature = await wallet.signMessage(utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
 		userOperation.signature = signature;
 
-		console.log("sendNativeCurrency| User operation: ", userOperation);
+		console.log("| User operation: ", userOperation);
+
+		return userOperation;
+	}
+
+	private async sendTransaction(params: WalletStruct, userOperation: UserOperationStruct): Promise<boolean> {
+		const { rpcProvider } = await this.initParams(params);
 
 		const chain = await getChainName(params.chainId); // find the list of chain names on the Pimlico verifying paymaster reference page
 		const apiKey = process.env.PIMLICO_API_KEY;
@@ -119,8 +124,9 @@ export class SmartWallet extends Base {
 		const pimlicoProvider = new StaticJsonRpcProvider(pimlicoEndpoint);
 
 		//First find the native currency balance for the smartAccount
+		const smartAccountAddress = await this.getSmartAccountAddress(params);
 		const eth_balance = await rpcProvider.getBalance(smartAccountAddress);
-		console.log("sendNativeCurrency| Smart account balance: ", eth_balance);
+		console.log("| Smart account balance: ", eth_balance);
 
 		if (eth_balance < BigNumber.from(10)) {
 			throw new Error("Insufficient balance in smart account");
@@ -129,92 +135,39 @@ export class SmartWallet extends Base {
 		const userOperationHash = await pimlicoProvider.send("eth_sendUserOperation", [userOperation, this.ENTRY_POINT_ADDRESS]);
 		console.log("User operation hash: ", userOperationHash);
 
-		console.log("Querying for receipts...");
-		let receipt = null;
-		while (!receipt) {
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			receipt = await pimlicoProvider.send("eth_getUserOperationReceipt", [userOperationHash]);
-		}
+		try {
+			console.log("Querying for receipts...");
+			let receipt = null;
+			while (!receipt) {
+				await new Promise((resolve) => setTimeout(resolve, 3000));
+				receipt = await pimlicoProvider.send("eth_getUserOperationReceipt", [userOperationHash]);
+			}
 
-		const txHash = receipt.receipt.transactionHash;
-		console.log("Transaction hash: ", txHash);
-		return true;
+			const txHash = receipt.receipt.transactionHash;
+			console.log("Transaction hash: ", txHash);
+			return true;
+		} catch (e) {
+			console.log("Error from Pimlico eth_getUserOperationReceipt: ", e);
+			return true;
+		}
 	}
 
-	// Note - this function makes the Smart Account contract pay for the gas. We are NOT using the Pimlico paymaster, we are just using their bundler
-	// Need to fund the Smart Contract or the bundler will throw an error
+	async sendNativeCurrency(params: WalletStruct, to: string, value: number, data?: string): Promise<boolean> {
+		console.log("sendNativeCurrency");
+
+		const userOperation = await this.prepareTransaction(params, to, value, data);
+		return this.sendTransaction(params, userOperation);
+	}
+
 	async sendERC20Tokens(params: WalletStruct, to: string, numberTokensinWei: number, tokenAddress: string): Promise<boolean> {
-		const { rpcProvider, wallet, entryPoint } = await this.initParams(params);
+		console.log("sendERC20Tokens");
 
-		const smartAccountAddress = await this.getSmartAccountAddress(params);
-		console.log("sendERC20Tokens| Smart wallet address: ", smartAccountAddress);
-
+		const { rpcProvider } = await this.initParams(params);
 		const erc20Token = ERC20__factory.connect(tokenAddress, rpcProvider);
 		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);
 
-		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, rpcProvider);
-
-		const callData = simpleAccount.interface.encodeFunctionData("execute", [tokenAddress, 0, data]);
-		console.log("sendERC20Tokens| Call data: ", callData);
-
-		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, rpcProvider);
-		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [wallet.address, 0])]);
-
-		console.log("sendERC20Tokens| Init code: ", initCode);
-
-		const gasPrice = await rpcProvider.getGasPrice();
-		const nonce = await simpleAccount.callStatic.getNonce();
-		console.log("sendERC20Tokens| Nonce: ", nonce);
-
-		//Check if the smart account contract has been deployed
-		const contractCode = await rpcProvider.getCode(smartAccountAddress);
-
-		const userOperation = {
-			sender: smartAccountAddress,
-			nonce: utils.hexlify(nonce),
-			initCode: contractCode === "0x" ? initCode : "0x",
-			callData,
-			callGasLimit: utils.hexlify(100_000),
-			verificationGasLimit: utils.hexlify(400_000),
-			preVerificationGas: utils.hexlify(50000),
-			maxFeePerGas: utils.hexlify(gasPrice),
-			maxPriorityFeePerGas: utils.hexlify(gasPrice),
-			paymasterAndData: "0x",
-			signature: "0x",
-		};
-		const signature = await wallet.signMessage(utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
-		userOperation.signature = signature;
-
-		console.log("sendERC20Tokens| User operation: ", userOperation);
-
-		const chain = await getChainName(params.chainId); // find the list of chain names on the Pimlico verifying paymaster reference page
-		const apiKey = process.env.PIMLICO_API_KEY;
-
-		const pimlicoEndpoint = `https://api.pimlico.io/v1/${chain}/rpc?apikey=${apiKey}`;
-
-		const pimlicoProvider = new StaticJsonRpcProvider(pimlicoEndpoint);
-
-		//First find the native currency balance for the smartAccount
-		const eth_balance = await rpcProvider.getBalance(smartAccountAddress);
-		console.log("sendERC20Tokens| Smart account balance: ", eth_balance);
-
-		if (eth_balance < BigNumber.from(10)) {
-			throw new Error("Insufficient balance in smart account");
-		}
-
-		const userOperationHash = await pimlicoProvider.send("eth_sendUserOperation", [userOperation, this.ENTRY_POINT_ADDRESS]);
-		console.log("User operation hash: ", userOperationHash);
-
-		console.log("Querying for receipts...");
-		let receipt = null;
-		while (!receipt) {
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			receipt = await pimlicoProvider.send("eth_getUserOperationReceipt", [userOperationHash]);
-		}
-
-		const txHash = receipt.receipt.transactionHash;
-		console.log("Transaction hash: ", txHash);
-		return true;
+		const userOperation = await this.prepareTransaction(params, tokenAddress, 0, data);
+		return this.sendTransaction(params, userOperation);
 	}
 }
 
