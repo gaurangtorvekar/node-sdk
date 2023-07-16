@@ -190,5 +190,14 @@ export class SmartWallet extends Base {
 
 		return formatted_balance;
 	}
+
+	async isSmartAccountDeployed(params: WalletStruct): Promise<boolean> {
+		const { rpcProvider } = await this.initParams(params);
+		const smartAccountAddress = await this.getSmartAccountAddress(params);
+		const contractCode = await rpcProvider.getCode(smartAccountAddress);
+		console.log("Smart account code: ", contractCode);
+
+		return contractCode !== "0x";
+	}
 }
 

@@ -127,6 +127,21 @@ describe("SmartWallet", () => {
 			}
 			expect(result).toBeGreaterThan(0);
 		});
+
+		//Test for isSmartAccountDeployed
+		it("should return true if smart account is deployed", async () => {
+			let result;
+			try {
+				result = await smartWallet.isSmartAccountDeployed({
+					privateKey: process.env.PRIVATE_KEY || "",
+					rpcUrl: process.env.RPC_URL || "", // Polygon Mumbai
+					chainId: 80001,
+				});
+			} catch (e) {
+				console.log("e:", e);
+			}
+			expect(result).toEqual(true);
+		});
 	});
 });
 
