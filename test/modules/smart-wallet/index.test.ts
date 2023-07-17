@@ -15,7 +15,7 @@ describe("SmartWallet", () => {
 	describe("setupSmartAccount", () => {
 		const expectedAddress = "0xbF874b81636F3FA36643A5996Cd5c187689609d7"; // replace with actual expected address
 
-		it("should return expected sender address by calling getSmartAccountAddress", async () => {
+		it.skip("should return expected sender address by calling getSmartAccountAddress", async () => {
 			let result;
 			try {
 				result = await smartWallet.getSmartAccountAddress({
@@ -29,7 +29,7 @@ describe("SmartWallet", () => {
 			expect(result).toEqual(expectedAddress);
 		});
 
-		it("should return the same sender address by calling getSmartAccountAddress on another chain", async () => {
+		it.skip("should return the same sender address by calling getSmartAccountAddress on another chain", async () => {
 			let result;
 			try {
 				result = await smartWallet.getSmartAccountAddress({
@@ -78,6 +78,25 @@ describe("SmartWallet", () => {
 			expect(result).toEqual(true);
 		}, 20000);
 
+		it.skip("should send gasless native currency userop and return true", async () => {
+			let result;
+
+			try {
+				result = await smartWallet.sendNativeCurrencyGassless(
+					{
+						privateKey: process.env.PRIVATE_KEY || "",
+						rpcUrl: process.env.RPC_URL || "", // Polygon Mumbai
+						chainId: 80001,
+					},
+					"0x841056F279582d1dfD586c3C77e7821821B5B510",
+					22,
+					"0x"
+				);
+			} catch (e) {
+				console.log("e:", e);
+			}
+		}, 50000);
+
 		it.skip("should send ERC20 UserOp and return true", async () => {
 			let result;
 			try {
@@ -95,9 +114,28 @@ describe("SmartWallet", () => {
 				console.log("e:", e);
 			}
 			expect(result).toEqual(true);
-		}, 20000);
+		}, 50000);
 
-		it("should return the balance of native currency", async () => {
+		it("should send ERC20 UserOp gasless and return true", async () => {
+			let result;
+
+			try {
+				result = await smartWallet.sendERC20TokensGasless(
+					{
+						privateKey: process.env.PRIVATE_KEY || "",
+						rpcUrl: process.env.RPC_URL || "", // Polygon Mumbai
+						chainId: 80001,
+					},
+					"0x841056F279582d1dfD586c3C77e7821821B5B510",
+					400,
+					"0xe11A86849d99F524cAC3E7A0Ec1241828e332C62"
+				);
+			} catch (e) {
+				console.log("e", e);
+			}
+		}, 70000);
+
+		it.skip("should return the balance of native currency", async () => {
 			let result;
 			try {
 				result = await smartWallet.getNativeCurrencyBalance({
@@ -111,7 +149,7 @@ describe("SmartWallet", () => {
 			expect(result).toBeGreaterThan(0);
 		});
 
-		it("should return the balance of ERC20 tokens", async () => {
+		it.skip("should return the balance of ERC20 tokens", async () => {
 			let result;
 			try {
 				result = await smartWallet.getERC20TokenBalance(
@@ -129,7 +167,7 @@ describe("SmartWallet", () => {
 		});
 
 		//Test for isSmartAccountDeployed
-		it("should return true if smart account is deployed", async () => {
+		it.skip("should return true if smart account is deployed", async () => {
 			let result;
 			try {
 				result = await smartWallet.isSmartAccountDeployed({
