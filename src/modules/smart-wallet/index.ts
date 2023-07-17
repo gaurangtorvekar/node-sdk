@@ -245,6 +245,23 @@ export class SmartWallet extends Base {
 		return formatted_balance;
 	}
 
+	async getERC20TokenBalanceBatch(params: WalletStruct, tokenAddresses: string[]): Promise<number[]> {
+		if (tokenAddresses.length > 100) {
+			throw new Error("Can return maximum 100 balances at a time");
+		}
+
+		const { rpcProvider } = await this.initParams(params);
+		const smartAccountAddress = await this.getSmartAccountAddress(params);
+
+		const erc20Tokens = tokenAddresses.map((tokenAddress) => ERC20__factory.connect(tokenAddress, rpcProvider));
+		const balancePromises = erc20Tokens.map((erc20Token) => erc20Token.balanceOf(smartAccountAddress));
+		const balances = await Promise.all(balancePromises);
+		const formatted_balances = balances.map((balance) => Math.floor(parseFloat(utils.formatEther(balance)) * 100) / 100);
+		console.log("ERC20 token balances: ", formatted_balances);
+
+		return formatted_balances;
+	}
+
 	async isSmartAccountDeployed(params: WalletStruct): Promise<boolean> {
 		const { rpcProvider } = await this.initParams(params);
 		const smartAccountAddress = await this.getSmartAccountAddress(params);

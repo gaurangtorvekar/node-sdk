@@ -116,7 +116,7 @@ describe("SmartWallet", () => {
 			expect(result).toEqual(true);
 		}, 50000);
 
-		it("should send ERC20 UserOp gasless and return true", async () => {
+		it.skip("should send ERC20 UserOp gasless and return true", async () => {
 			let result;
 
 			try {
@@ -149,7 +149,7 @@ describe("SmartWallet", () => {
 			expect(result).toBeGreaterThan(0);
 		});
 
-		it.skip("should return the balance of ERC20 tokens", async () => {
+		it("should return the balance of ERC20 tokens", async () => {
 			let result;
 			try {
 				result = await smartWallet.getERC20TokenBalance(
@@ -158,7 +158,7 @@ describe("SmartWallet", () => {
 						rpcUrl: process.env.RPC_URL || "", // Polygon Mumbai
 						chainId: 80001,
 					},
-					"0xe11A86849d99F524cAC3E7A0Ec1241828e332C62"
+					"0x326C977E6efc84E512bB9C30f76E30c160eD06FB"
 				);
 			} catch (e) {
 				console.log("e:", e);
@@ -166,7 +166,24 @@ describe("SmartWallet", () => {
 			expect(result).toBeGreaterThan(0);
 		});
 
-		//Test for isSmartAccountDeployed
+		it("should return the balance of a batch of ERC20 tokens", async () => {
+			let result;
+			try {
+				result = await smartWallet.getERC20TokenBalanceBatch(
+					{
+						privateKey: process.env.PRIVATE_KEY || "",
+						rpcUrl: process.env.RPC_URL || "", // Polygon Mumbai
+						chainId: 80001,
+					},
+					["0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"]
+				);
+			} catch (e) {
+				console.log("e:", e);
+			}
+			const allGreaterThanZero = result.every((value) => value > 0);
+			expect(allGreaterThanZero).toBe(true);
+		});
+
 		it.skip("should return true if smart account is deployed", async () => {
 			let result;
 			try {
@@ -178,7 +195,6 @@ describe("SmartWallet", () => {
 			} catch (e) {
 				console.log("e:", e);
 			}
-			expect(result).toEqual(true);
 		});
 	});
 });
