@@ -44,17 +44,17 @@ describe("SmartWallet", () => {
 		}, 20000);
 
 		it.skip("should send gasless native currency userop and return true", async () => {
-			let result = await smartWallet.sendNativeCurrencyGassless(DEFAULT_CONFIG, "0x841056F279582d1dfD586c3C77e7821821B5B510", 22, "0x");
+			let result = await smartWallet.sendNativeCurrencyGasless(DEFAULT_CONFIG, "0x841056F279582d1dfD586c3C77e7821821B5B510", 22, "0x");
 			expect(result).toEqual(true);
 		}, 50000);
 
 		it.skip("should send ERC20 UserOp and return true", async () => {
-			let result = await smartWallet.sendERC20Tokens(DEFAULT_CONFIG, "0x841056F279582d1dfD586c3C77e7821821B5B510", 300, "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62");
+			let result = await smartWallet.sendTokens(DEFAULT_CONFIG, "0x841056F279582d1dfD586c3C77e7821821B5B510", 300, "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62");
 			expect(result).toEqual(true);
 		}, 50000);
 
 		it.skip("should send ERC20 UserOp gasless and return true", async () => {
-			let result = await smartWallet.sendERC20TokensGasless(DEFAULT_CONFIG, "0x841056F279582d1dfD586c3C77e7821821B5B510", 400, "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62");
+			let result = await smartWallet.sendTokensGasless(DEFAULT_CONFIG, "0x841056F279582d1dfD586c3C77e7821821B5B510", 400, "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62");
 			expect(result).toEqual(true);
 		}, 70000);
 

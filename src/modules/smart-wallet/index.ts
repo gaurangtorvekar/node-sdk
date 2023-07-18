@@ -189,7 +189,7 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(params, signedUserOperation);
 	}
 
-	async sendNativeCurrencyGassless(params: WalletStruct, to: string, value: number, data?: string): Promise<boolean> {
+	async sendNativeCurrencyGasless(params: WalletStruct, to: string, value: number, data?: string): Promise<boolean> {
 		console.log("sendNativeCurrencyGassless =====================");
 
 		const userOperation = await this.prepareTransaction(params, to, value, data);
@@ -198,7 +198,7 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(params, signedUserOperation);
 	}
 
-	async sendERC20Tokens(params: WalletStruct, to: string, numberTokensinWei: number, tokenAddress: string): Promise<boolean> {
+	async sendTokens(params: WalletStruct, to: string, numberTokensinWei: number, tokenAddress: string): Promise<boolean> {
 		console.log("sendERC20Tokens =====================");
 
 		const { rpcProvider } = await this.initParams(params);
@@ -211,7 +211,7 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(params, signedUserOperation);
 	}
 
-	async sendERC20TokensGasless(params: WalletStruct, to: string, numberTokensinWei: number, tokenAddress: string): Promise<boolean> {
+	async sendTokensGasless(params: WalletStruct, to: string, numberTokensinWei: number, tokenAddress: string): Promise<boolean> {
 		console.log("sendERC20TokensGasless =====================");
 
 		const { rpcProvider } = await this.initParams(params);
