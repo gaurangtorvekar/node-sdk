@@ -130,3 +130,40 @@ dist
 .pnp.*
 
 .env
+
+# For the next app
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/sdk-test-app/node_modules
+/sdk-test-app/.pnp
+/sdk-test-app.pnp.js
+
+# testing
+/sdk-test-app/coverage
+
+# next.js
+/sdk-test-app/.next/
+/sdk-test-app/out/
+
+# production
+/sdk-test-app/build
+
+# misc
+/sdk-test-app/.DS_Store
+/sdk-test-app/*.pem
+
+# debug
+/sdk-test-app/npm-debug.log*
+/sdk-test-app/yarn-debug.log*
+/sdk-test-app/yarn-error.log*
+
+# local env files
+/sdk-test-app/.env*.local
+
+# vercel
+/sdk-test-app/.vercel
+
+# typescript
+/sdk-test-app/*.tsbuildinfo
+/sdk-test-app/next-env.d.ts
