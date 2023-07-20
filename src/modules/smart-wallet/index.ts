@@ -32,7 +32,6 @@ export class SmartWallet extends Base {
 			const address = await externalProvider.getSigner().getAddress();
 			signer = externalProvider.getSigner();
 		} catch (e) {
-			console.log("Couldn't call getAddress() inside initparams========");
 			wallet = new ethers.Wallet(options.privateKey);
 			signer = wallet.connect(externalProvider);
 		}
@@ -44,12 +43,9 @@ export class SmartWallet extends Base {
 	}
 
 	async getSmartAccountAddress(externalProvider: Web3Provider, options?: WalletStruct): Promise<string> {
-		// console.log("Inside getSmartAccountAddress, received provider  = ", externalProvider);
 		const { signer, entryPoint, simpleAccountFactory } = await this.initParams(externalProvider, options);
-		// console.log("Back inside getSmartAccountAddress, entryPoint = ", entryPoint);
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
-		console.log("Inside getSmartAccountAddress, Generated initCode:", initCode);
 		let smartAccountAddress;
 		try {
 			await entryPoint.callStatic.getSenderAddress(initCode);
@@ -81,20 +77,12 @@ export class SmartWallet extends Base {
 
 	private async prepareTransaction(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<UserOperationStruct> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
-		console.log("Inside prepareTransaction, Got back signer = ", await signer.getAddress());
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		console.log("| Smart wallet address: ", smartAccountAddress);
-
 		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, externalProvider);
 
 		const callData = simpleAccount.interface.encodeFunctionData("execute", [to, value, data]);
-		console.log("| Call data: ", callData);
-
 		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, externalProvider);
 		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
-
-		console.log("| Init code: ", initCode);
-
 		const gasPrice = await externalProvider.getGasPrice();
 
 		//Check if the smart account contract has been deployed
@@ -120,7 +108,7 @@ export class SmartWallet extends Base {
 			paymasterAndData: "0x",
 			signature: "0x",
 		};
-
+		console.log("Inside prepareTransaction | Prepared user operation: ", userOperation);
 		return userOperation;
 	}
 
@@ -130,14 +118,13 @@ export class SmartWallet extends Base {
 		const signature = await signer.signMessage(utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
 		userOperation.signature = signature;
 
-		console.log("Signed user Operation: ", userOperation);
+		console.log("Inside signUserOperation | Signed user Operation: ", userOperation);
 
 		return userOperation;
 	}
 
 	private async getPaymasterSponsorship(chainId: number, userOperation: UserOperationStruct, pimlicoApiKey: string): Promise<UserOperationStruct> {
 		const chain = await getChainName(chainId); // find the list of chain names on the Pimlico verifying paymaster reference page
-		console.log("getPaymasterSponsorship | chain: ", chain);
 		const pimlicoEndpoint = `https://api.pimlico.io/v1/${chain}/rpc?apikey=${pimlicoApiKey}`;
 		const pimlicoProvider = new StaticJsonRpcProvider(pimlicoEndpoint);
 
@@ -151,6 +138,7 @@ export class SmartWallet extends Base {
 		const paymasterAndData = sponsorUserOperationResult.paymasterAndData;
 
 		userOperation.paymasterAndData = paymasterAndData;
+		console.log("Inside getPaymasterSponsorship | Sponsored user operation: ", userOperation);
 		return userOperation;
 	}
 
@@ -165,7 +153,6 @@ export class SmartWallet extends Base {
 		//First find the native currency balance for the smartAccount
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
 		const eth_balance = await externalProvider.getBalance(smartAccountAddress);
-		console.log("| Smart account balance: ", eth_balance);
 
 		if (eth_balance < BigNumber.from(10)) {
 			throw new Error("Insufficient balance in smart account");
@@ -173,7 +160,6 @@ export class SmartWallet extends Base {
 
 		// Cannot send this TXN from the SDK, has to be done through the BE
 		const userOperationHash = await pimlicoProvider.send("eth_sendUserOperation", [userOperation, this.ENTRY_POINT_ADDRESS]);
-		console.log("User operation hash: ", userOperationHash);
 
 		try {
 			console.log("Querying for receipts...");
@@ -193,59 +179,42 @@ export class SmartWallet extends Base {
 	}
 
 	async sendNativeCurrency(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string, pimlicoApiKey?: string): Promise<boolean> {
-		console.log("sendNativeCurrency =====================");
-
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
-		console.log("Back in sendNativeCurrency, userOperation = ", userOperation);
 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-		console.log("Back in sendNativeCurrency, signedUserOperation = ", userOperation);
+		console.log("Inside sendNativeCurrency, signedUserOperation = ", userOperation);
 		return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
 	}
 
 	async sendNativeCurrencyGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string, pimlicoApiKey?: string): Promise<boolean> {
-		console.log("sendNativeCurrencyGassless =====================");
-
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
-		console.log("Back in sendNativeCurrencyGasless, userOperation = ", userOperation);
 		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation, pimlicoApiKey);
-		console.log("Back in sendNativeCurrencyGasless, sponsoredUserOperation = ", sponsoredUserOperation);
 		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
-		console.log("Back in sendNativeCurrencyGasless, signedUserOperation = ", signedUserOperation);
+		console.log("Inside sendNativeCurrencyGasless, signedUserOperation = ", signedUserOperation);
 		return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
 	}
 
 	async sendTokens(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct, pimlicoApiKey?: string): Promise<boolean> {
-		console.log("sendERC20Tokens =====================");
-
 		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
 		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);
-
 		const userOperation = await this.prepareTransaction(externalProvider, tokenAddress, 0, options, data);
-		console.log("Back in sendTokens, userOperation = ", userOperation);
 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-		console.log("Back in sendTokens, signedUserOperation = ", signedUserOperation);
+		console.log("Inside sendTokens, signedUserOperation = ", signedUserOperation);
 		return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
 	}
 
 	async sendTokensGasless(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct, pimlicoApiKey?: string): Promise<boolean> {
-		console.log("sendERC20TokensGasless =====================");
-
 		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
 		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);
-
 		const userOperation = await this.prepareTransaction(externalProvider, tokenAddress, 0, options, data);
-		console.log("Back in sendTokensGasless, userOperation = ", userOperation);
 		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation, pimlicoApiKey);
-		console.log("Back in sendTokensGasless, sponsoredUserOperation = ", sponsoredUserOperation);
 		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
-		console.log("Back in sendTokensGasless, signedUserOperation = ", signedUserOperation);
+		console.log("Inside sendTokensGasless, signedUserOperation = ", signedUserOperation);
 
 		return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
 	}
 
 	async getNativeCurrencyBalance(externalProvider, options?: WalletStruct): Promise<number> {
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		console.log("Inside getNativeCurrencyBalance | Smart Account: ", smartAccountAddress);
 		const balance = await externalProvider.getBalance(smartAccountAddress);
 		const formatted_balance = Math.floor(parseFloat(utils.formatEther(balance)) * 100000) / 100000;
 		console.log("Inside getNativeCurrencyBalance | Native currency balance: ", formatted_balance);
@@ -256,7 +225,6 @@ export class SmartWallet extends Base {
 	async getERC20TokenBalance(externalProvider: Web3Provider, tokenAddress: string, options?: WalletStruct): Promise<number> {
 		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		console.log("Inside getERC20TokenBalance | Smart Account: ", smartAccountAddress);
 		const balance = await erc20Token.balanceOf(smartAccountAddress);
 		const formatted_balance = Math.floor(parseFloat(utils.formatEther(balance)) * 100) / 100;
 		console.log("Inside getERC20TokenBalance | ERC20 token balance: ", formatted_balance);
@@ -270,7 +238,6 @@ export class SmartWallet extends Base {
 		}
 
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		console.log("Inside getERC20TokenBalanceBatch | Smart Account: ", smartAccountAddress);
 		const erc20Tokens = tokenAddresses.map((tokenAddress) => ERC20__factory.connect(tokenAddress, externalProvider));
 		const balancePromises = erc20Tokens.map((erc20Token) => erc20Token.balanceOf(smartAccountAddress));
 		const balances = await Promise.all(balancePromises);
@@ -282,7 +249,6 @@ export class SmartWallet extends Base {
 
 	async isSmartAccountDeployed(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		console.log("Inside isSmartAccountDeployed | Smart Account: ", smartAccountAddress);
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 		console.log("Inside isSmartAccountDeployed | Smart account code: ", contractCode);
 
