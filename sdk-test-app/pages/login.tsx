@@ -1,10 +1,6 @@
 import { ParticleNetwork, WalletEntryPosition } from "@particle-network/auth";
 import { ParticleProvider } from "@particle-network/provider";
 import React, { useState } from "react";
-import { Web3Auth } from "@web3auth/modal";
-import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
-import { CHAIN_NAMESPACES, WALLET_ADAPTERS } from "@web3auth/base";
-import { LOGIN_PROVIDER } from "@toruslabs/base-controllers";
 import { ethers } from "ethers";
 import { Bastion } from "@bastion/sdk";
 
@@ -85,18 +81,18 @@ export default function LoginPage() {
 			// 	process.env.NEXT_PUBLIC_PIMLICO_API_KEY
 			// );
 
-			// const txReceipt = await bastion.smartWallet.sendTokensGasless(
-			// 	ethersProvider,
-			// 	"0x841056F279582d1dfD586c3C77e7821821B5B510",
-			// 	321,
-			// 	"0xe11A86849d99F524cAC3E7A0Ec1241828e332C62",
-			// 	{
-			// 		privateKey: process.env.NEXT_PUBLIC_PRIVATE_KEY || "",
-			// 		rpcUrl: process.env.NEXT_PUBLIC_RPC_URL1 || "",
-			// 		chainId: 80001,
-			// 	},
-			// 	process.env.NEXT_PUBLIC_PIMLICO_API_KEY
-			// );
+			const txReceipt = await bastion.smartWallet.sendTokensGasless(
+				ethersProvider,
+				"0x841056F279582d1dfD586c3C77e7821821B5B510",
+				321,
+				"0xe11A86849d99F524cAC3E7A0Ec1241828e332C62",
+				{
+					privateKey: process.env.NEXT_PUBLIC_PRIVATE_KEY || "",
+					rpcUrl: process.env.NEXT_PUBLIC_RPC_URL1 || "",
+					chainId: 80001,
+				},
+				process.env.NEXT_PUBLIC_PIMLICO_API_KEY
+			);
 		} catch (e) {
 			console.error(e);
 		}
@@ -110,19 +106,19 @@ export default function LoginPage() {
 				</div>
 
 				<div className="mt-4">
-					<button onClick={() => loginWithProvider(LOGIN_PROVIDER.GOOGLE)} className="py-2 px-4 w-full text-center bg-red-600 rounded-md text-white text-sm hover:bg-red-500">
+					<button onClick={() => loginWithProvider("Google")} className="py-2 px-4 w-full text-center bg-red-600 rounded-md text-white text-sm hover:bg-red-500">
 						Google
 					</button>
 				</div>
 
 				<div className="mt-4">
-					<button onClick={() => loginWithProvider(LOGIN_PROVIDER.LINKEDIN)} className="py-2 px-4 w-full text-center bg-blue-600 rounded-md text-white text-sm hover:bg-blue-500">
+					<button onClick={() => loginWithProvider("LinkedIn")} className="py-2 px-4 w-full text-center bg-blue-600 rounded-md text-white text-sm hover:bg-blue-500">
 						LinkedIn
 					</button>
 				</div>
 
 				<div className="mt-4">
-					<button onClick={() => loginWithProvider(LOGIN_PROVIDER.FACEBOOK)} className="py-2 px-4 w-full text-center bg-blue-400 rounded-md text-white text-sm hover:bg-blue-300">
+					<button onClick={() => loginWithProvider("Facebook")} className="py-2 px-4 w-full text-center bg-blue-400 rounded-md text-white text-sm hover:bg-blue-300">
 						Facebook
 					</button>
 				</div>
