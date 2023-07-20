@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import { SmartWallet } from "../../../src/modules/smart-wallet";
+import { describe, beforeEach, it, expect } from "@jest/globals";
 
 let smartWallet: SmartWallet;
 let walletConnected;
