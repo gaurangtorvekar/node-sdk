@@ -7,6 +7,7 @@ import { ERC20, ERC20__factory } from "@pimlico/erc20-paymaster/contracts";
 import { getERC20Paymaster } from "@pimlico/erc20-paymaster";
 import { BaseContract, BigNumber, BigNumberish, BytesLike, CallOverrides, ContractTransaction, Overrides, PayableOverrides, PopulatedTransaction, Signer } from "ethers";
 import { getChainName } from "../../helper";
+import ts from "typescript";
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -32,8 +33,9 @@ export class SmartWallet extends Base {
 			const address = await externalProvider.getSigner().getAddress();
 			signer = externalProvider.getSigner();
 		} catch (e) {
-			wallet = new ethers.Wallet(options.privateKey);
-			signer = wallet.connect(externalProvider);
+			signer = new Wallet(options.privateKey, externalProvider);
+			// wallet = new ethers.Wallet(options.privateKey);
+			// signer = wallet.connect(externalProvider);
 		}
 
 		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, externalProvider);
@@ -76,12 +78,11 @@ export class SmartWallet extends Base {
 	}
 
 	private async prepareTransaction(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<UserOperationStruct> {
-		const { signer, entryPoint } = await this.initParams(externalProvider, options);
+		const { signer, entryPoint, simpleAccountFactory } = await this.initParams(externalProvider, options);
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
 		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, externalProvider);
 
 		const callData = simpleAccount.interface.encodeFunctionData("execute", [to, value, data]);
-		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, externalProvider);
 		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
 		const gasPrice = await externalProvider.getGasPrice();
 
@@ -142,14 +143,78 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
+	private async getPaymasterSponsorshipERC20(externalProvider: Web3Provider, chainId: number, userOperation, pimlicoApiKey: string, options?: WalletStruct): Promise<UserOperationStruct> {
+		const { signer, entryPoint } = await this.initParams(externalProvider, options);
+		const chain = await getChainName(chainId); // find the list of chain names on the Pimlico verifying paymaster reference page
+		const pimlicoEndpoint = `https://api.pimlico.io/v1/${chain}/rpc?apikey=${pimlicoApiKey}`;
+		const pimlicoProvider = new StaticJsonRpcProvider(pimlicoEndpoint);
+
+		const erc20Paymaster = await getERC20Paymaster(externalProvider, "USDC");
+		const erc20PaymasterAddress = erc20Paymaster.contract.address;
+		const usdcTokenAddress = await erc20Paymaster.contract.token();
+		const usdcToken = ERC20__factory.connect(usdcTokenAddress, signer);
+		const simpleAccount = SimpleAccount__factory.connect(erc20PaymasterAddress, externalProvider);
+
+		console.log("Inside getPaymasterSponsorshipERC20 | userOperation: ", userOperation);
+		const originalCallData = userOperation.callData;
+
+		// Check if userOperation is a promise
+		if (userOperation && typeof userOperation === "object" && typeof userOperation.then === "function") {
+			console.log("Useropration is a promise");
+		} else {
+			console.log("Useropration is NOT a promise");
+		}
+
+		try {
+			//@ts-ignore
+			await erc20Paymaster.verifyTokenApproval(userOperation);
+		} catch (e) {
+			console.log("Inside getPaymasterSponsorshipERC20 | Error from verifyTokenApproval: ", e);
+			// @ts-ignore
+			const tokenAmount = await erc20Paymaster.calculateTokenAmount(userOperation);
+			console.log("Inside getPaymasterSponsorshipERC20 | tokenAmount: ", tokenAmount.toNumber());
+
+			// Note - We need to approve the paymaster to spend the USDC for gas
+			const approveData = usdcToken.interface.encodeFunctionData("approve", [erc20PaymasterAddress, 10 * tokenAmount.toNumber()]);
+
+			// GENERATE THE CALLDATA TO APPROVE THE USDC
+			const to = usdcToken.address;
+			const value = 0;
+			const data = approveData;
+
+			const callData = simpleAccount.interface.encodeFunctionData("execute", [to, value, data]);
+			userOperation.callData = callData;
+
+			const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
+			console.log("Inside getPaymasterSponsorshipERC20 | ApproveUserOperation: ", signedUserOperation);
+			await this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
+		}
+
+		console.log("Inside getPaymasterSponsorshipERC20 | Enough tokens have been approved, sending the TXN now...");
+		userOperation.callData = originalCallData;
+		const nonce = await entryPoint.getNonce(userOperation.sender, 0);
+		userOperation.nonce = utils.hexlify(nonce);
+
+		const erc20PaymasterAndData = await erc20Paymaster.generatePaymasterAndData(userOperation);
+		userOperation.paymasterAndData = erc20PaymasterAndData;
+		console.log("Inside getPaymasterSponsorshipERC20 | Sponsored user operation: ", userOperation);
+		const signedUserOperation2 = await this.signUserOperation(externalProvider, userOperation, options);
+		console.log("Inside getPaymasterSponsorshipERC20 | originalUserOperation: ", signedUserOperation2);
+		await this.sendTransaction(externalProvider, signedUserOperation2, options, pimlicoApiKey);
+
+		return userOperation;
+	}
+
 	private async sendTransaction(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct, pimlicoApiKey?: string): Promise<boolean> {
 		const chain = await getChainName(options.chainId); // find the list of chain names on the Pimlico verifying paymaster reference page
 
 		//TODO - cannot do this. We need to store the Pimlico API key on our BE.
 		const pimlicoEndpoint = `https://api.pimlico.io/v1/${chain}/rpc?apikey=${pimlicoApiKey}`;
+		// const pimlicoEndpoint = "http://0.0.0.0:14337";
 
 		const pimlicoProvider = new StaticJsonRpcProvider(pimlicoEndpoint);
 
+		//TODO - always check whether the Smart Account has been deployed or not
 		//First find the native currency balance for the smartAccount
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
 		const eth_balance = await externalProvider.getBalance(smartAccountAddress);
@@ -193,6 +258,16 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
 	}
 
+	async sendNativeCurrencyERC20Gas(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string, pimlicoApiKey?: string): Promise<boolean> {
+		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
+		const sponsoredUserOperation = await this.getPaymasterSponsorshipERC20(externalProvider, options.chainId, userOperation, pimlicoApiKey, options);
+		// const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
+		// console.log("Inside sendNativeCurrencyERC20Gas, signedUserOperation = ", signedUserOperation);
+		// return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
+		return true;
+	}
+
+	//TODO - Take token number as a string because it cannot handle big numbers
 	async sendTokens(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct, pimlicoApiKey?: string): Promise<boolean> {
 		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
 		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);

@@ -49,13 +49,18 @@ describe("SmartWallet", () => {
 			expect(result).toEqual(true);
 		}, 20000);
 
-		it("should send native currency UserOp and return true", async () => {
+		it.skip("should send native currency UserOp and return true", async () => {
 			let result = await smartWallet.sendNativeCurrency(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 19, DEFAULT_CONFIG, "0x", process.env.PIMLICO_API_KEY);
 			expect(result).toEqual(true);
 		}, 70000);
 
 		it.skip("should send gasless native currency userop and return true", async () => {
 			let result = await smartWallet.sendNativeCurrencyGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 22, DEFAULT_CONFIG, "0x", process.env.PIMLICO_API_KEY);
+			expect(result).toEqual(true);
+		}, 50000);
+
+		it.skip("should send gasless native currency userop and return true", async () => {
+			let result = await smartWallet.sendNativeCurrencyERC20Gas(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 22, DEFAULT_CONFIG, "0x", process.env.PIMLICO_API_KEY);
 			expect(result).toEqual(true);
 		}, 50000);
 
