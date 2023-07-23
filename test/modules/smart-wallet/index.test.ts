@@ -49,11 +49,21 @@ describe("SmartWallet", () => {
 			expect(result).toEqual(true);
 		}, 20000);
 
+		it.skip("should send a generic message transaction to another smart contract", async () => {
+			const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
+			const data = bastionTestInterface.encodeFunctionData("ping");
+
+			// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
+			let result = await smartWallet.sendGenericMessageTransaction(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data, process.env.PIMLICO_API_KEY);
+			expect(result).toEqual(true);
+		}, 50000);
+
 		it("should send a generic message transaction to another smart contract", async () => {
 			const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
 			const data = bastionTestInterface.encodeFunctionData("ping");
 
-			let result = await smartWallet.sendGenericMessageTransaction(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data, process.env.PIMLICO_API_KEY);
+			// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
+			let result = await smartWallet.sendGenericMessageTransactionGasless(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data, process.env.PIMLICO_API_KEY);
 			expect(result).toEqual(true);
 		}, 50000);
 

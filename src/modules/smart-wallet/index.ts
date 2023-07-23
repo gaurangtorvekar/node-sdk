@@ -250,6 +250,14 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
 	}
 
+	async sendGenericMessageTransactionGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string, pimlicoApiKey?: string): Promise<boolean> {
+		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
+		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation, pimlicoApiKey);
+		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
+		console.log("Inside sendGenericMessageTransactionGasless, signedUserOperation = ", signedUserOperation);
+		return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
+	}
+
 	async sendNativeCurrency(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string, pimlicoApiKey?: string): Promise<boolean> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
