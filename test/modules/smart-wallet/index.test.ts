@@ -49,6 +49,14 @@ describe("SmartWallet", () => {
 			expect(result).toEqual(true);
 		}, 20000);
 
+		it("should send a generic message transaction to another smart contract", async () => {
+			const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
+			const data = bastionTestInterface.encodeFunctionData("ping");
+
+			let result = await smartWallet.sendGenericMessageTransaction(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data, process.env.PIMLICO_API_KEY);
+			expect(result).toEqual(true);
+		}, 50000);
+
 		it.skip("should send native currency UserOp and return true", async () => {
 			let result = await smartWallet.sendNativeCurrency(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 19, DEFAULT_CONFIG, "0x", process.env.PIMLICO_API_KEY);
 			expect(result).toEqual(true);
