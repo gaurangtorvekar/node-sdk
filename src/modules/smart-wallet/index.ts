@@ -332,9 +332,10 @@ export class SmartWallet extends Base {
 	}
 
 	async getEntryPointDeposit(externalProvider: Web3Provider, options?: WalletStruct): Promise<number> {
-		const { signer, entryPoint } = await this.initParams(externalProvider, options);
+		const { signer, simpleAccountFactory } = await this.initParams(externalProvider, options);
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		const deposit = await entryPoint.balanceOf(smartAccountAddress);
+		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, signer);
+		const deposit = await simpleAccount.getDeposit();
 		// Convert deposit to ETH
 		const formatted_deposit = Math.floor(parseFloat(utils.formatEther(deposit)) * 100000000000) / 100000000000;
 		console.log("Inside getEntryPointDeposit | Deposit: ", formatted_deposit);
@@ -345,18 +346,15 @@ export class SmartWallet extends Base {
 	async withdrawDepositFromEntryPoint(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		const deposit = await entryPoint.balanceOf(smartAccountAddress);
+		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, signer);
+		const deposit = await simpleAccount.getDeposit();
 		console.log("Inside withdrawDepositFromEntryPoint | Deposit: ", deposit.toNumber());
 
-		//First, create the data for the withdraw function from entry point contract
-		const withdrawData = entryPoint.interface.encodeFunctionData("withdrawTo", [smartAccountAddress, deposit.toNumber() / 2]);
+		const withdrawTx = await simpleAccount.withdrawDepositTo(smartAccountAddress, deposit.toNumber() / 5);
+		await withdrawTx.wait();
 
-		console.log("Entry point address = ", this.ENTRY_POINT_ADDRESS);
-		const userOperation = await this.prepareTransaction(externalProvider, this.ENTRY_POINT_ADDRESS, 0, options, withdrawData);
-		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-		console.log("Inside withdrawDepositFromEntryPoint, signedUserOperation = ", signedUserOperation);
-
-		return this.sendTransaction(externalProvider, signedUserOperation, options);
+		console.log("Inside withdrawDepositFromEntryPoint | Withdraw transaction hash: ", withdrawTx.hash);
+		return true;
 	}
 }
 
