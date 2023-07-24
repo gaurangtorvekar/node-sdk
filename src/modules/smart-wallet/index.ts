@@ -18,7 +18,7 @@ export class SmartWallet extends Base {
 	SIMPLE_ACCOUNT_FACTORY_ADDRESS = "0x9406Cc6185a346906296840746125a0E44976454";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
-	BASE_API_URL = "http://localhost:3000"
+	BASE_API_URL = "http://localhost:3000";
 
 	init(): Promise<void> {
 		//execute initazation steps
@@ -40,7 +40,7 @@ export class SmartWallet extends Base {
 			// signer = wallet.connect(externalProvider);
 		}
 
-		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, externalProvider);
+		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, signer);
 		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, signer);
 
 		return { signer, entryPoint, simpleAccountFactory };
@@ -103,9 +103,9 @@ export class SmartWallet extends Base {
 			nonce: utils.hexlify(nonce),
 			initCode: contractCode === "0x" ? initCode : "0x",
 			callData,
-			callGasLimit: utils.hexlify(100_000),
-			verificationGasLimit: utils.hexlify(400_000),
-			preVerificationGas: utils.hexlify(50000),
+			callGasLimit: utils.hexlify(80_000),
+			verificationGasLimit: utils.hexlify(300_000),
+			preVerificationGas: utils.hexlify(40000),
 			maxFeePerGas: utils.hexlify(gasPrice),
 			maxPriorityFeePerGas: utils.hexlify(gasPrice),
 			paymasterAndData: "0x",
@@ -130,7 +130,7 @@ export class SmartWallet extends Base {
 		try {
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/payment-sponsorship`, {
 				chainId: chainId,
-				userOperation: userOperation
+				userOperation: userOperation,
 			});
 			// console.log(response);
 			const updatedUserOperation = response?.data.data.userOperation;
@@ -217,7 +217,7 @@ export class SmartWallet extends Base {
 		try {
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/send-transaction`, {
 				chainId: options.chainId,
-				userOperation: userOperation
+				userOperation: userOperation,
 			});
 			// console.log(response);
 			const txHash = response?.data.data.txHash;
@@ -329,6 +329,34 @@ export class SmartWallet extends Base {
 		console.log("Inside isSmartAccountDeployed | Smart account code: ", contractCode);
 
 		return contractCode !== "0x";
+	}
+
+	async getEntryPointDeposit(externalProvider: Web3Provider, options?: WalletStruct): Promise<number> {
+		const { signer, entryPoint } = await this.initParams(externalProvider, options);
+		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
+		const deposit = await entryPoint.balanceOf(smartAccountAddress);
+		// Convert deposit to ETH
+		const formatted_deposit = Math.floor(parseFloat(utils.formatEther(deposit)) * 100000000000) / 100000000000;
+		console.log("Inside getEntryPointDeposit | Deposit: ", formatted_deposit);
+
+		return formatted_deposit;
+	}
+
+	async withdrawDepositFromEntryPoint(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
+		const { signer, entryPoint } = await this.initParams(externalProvider, options);
+		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
+		const deposit = await entryPoint.balanceOf(smartAccountAddress);
+		console.log("Inside withdrawDepositFromEntryPoint | Deposit: ", deposit.toNumber());
+
+		//First, create the data for the withdraw function from entry point contract
+		const withdrawData = entryPoint.interface.encodeFunctionData("withdrawTo", [smartAccountAddress, deposit.toNumber() / 2]);
+
+		console.log("Entry point address = ", this.ENTRY_POINT_ADDRESS);
+		const userOperation = await this.prepareTransaction(externalProvider, this.ENTRY_POINT_ADDRESS, 0, options, withdrawData);
+		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
+		console.log("Inside withdrawDepositFromEntryPoint, signedUserOperation = ", signedUserOperation);
+
+		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 }
 

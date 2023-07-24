@@ -70,13 +70,13 @@ describe("SmartWallet", () => {
 		}, 50000);
 
 		it.skip("should send native currency UserOp and return transaction hash", async () => {
-			let result = await smartWallet.sendNativeCurrency(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 19, DEFAULT_CONFIG, "0x");
+			let result = await smartWallet.sendNativeCurrency(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 1, DEFAULT_CONFIG, "0x");
 			console.log("transaction hash:", result);
 			expect(result).toHaveLength(66);
 		}, 70000);
 
 		it.skip("should send gasless native currency userop and return transaction hash", async () => {
-			let result = await smartWallet.sendNativeCurrencyGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 22, DEFAULT_CONFIG, "0x");
+			let result = await smartWallet.sendNativeCurrencyGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 1, DEFAULT_CONFIG, "0x");
 			console.log("transaction hash:", result);
 			expect(result).toHaveLength(66);
 		}, 50000);
@@ -93,13 +93,7 @@ describe("SmartWallet", () => {
 		}, 50000);
 
 		it.skip("should send ERC20 UserOp gasless and return transaction hash", async () => {
-			let result = await smartWallet.sendTokensGasless(
-				provider,
-				"0x841056F279582d1dfD586c3C77e7821821B5B510",
-				320,
-				"0xe11A86849d99F524cAC3E7A0Ec1241828e332C62",
-				DEFAULT_CONFIG
-			);
+			let result = await smartWallet.sendTokensGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 320, "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", DEFAULT_CONFIG);
 			console.log("transaction hash:", result);
 			expect(result).toHaveLength(66);
 		}, 70000);
@@ -124,6 +118,16 @@ describe("SmartWallet", () => {
 			let result = await smartWallet.isSmartAccountDeployed(provider, DEFAULT_CONFIG);
 			expect(result).toEqual(true);
 		});
+
+		it.skip("should return the deposit amount of the Smart Account from Entry Point", async () => {
+			let result = await smartWallet.getEntryPointDeposit(provider, DEFAULT_CONFIG);
+			expect(result).toBeGreaterThan(0);
+		});
+
+		it("should withdraw deposit of the Smart Account from the Entry Point contract", async () => {
+			let result = await smartWallet.withdrawDepositFromEntryPoint(provider, DEFAULT_CONFIG);
+			expect(result).toHaveLength(66);
+		}, 70000);
 	});
 });
 
