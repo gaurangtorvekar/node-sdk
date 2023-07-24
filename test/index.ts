@@ -5,6 +5,6 @@ const client = new Bastion({
   baseUrl: 'https://jsonplaceholder.typicode.com',
 });
 
-const res = client.smartWallet.sampleFunc({sampleArg: "sample"})
-console.log(res);
+// const res = client.smartWallet.sampleFunc({sampleArg: "sample"})
+// console.log(res);
 
