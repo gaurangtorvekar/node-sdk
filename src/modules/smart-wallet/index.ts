@@ -322,7 +322,7 @@ export class SmartWallet extends Base {
 		const erc20Tokens = tokenAddress.map((tokenAddress) => ERC20__factory.connect(tokenAddress, externalProvider));
 		const data = erc20Tokens.map((erc20Token, index) => erc20Token.interface.encodeFunctionData("transfer", [to[index], numberTokensinWei[index]]));
 
-		const userOperation = await this.prepareBatchTransaction(externalProvider, to, data, options);
+		const userOperation = await this.prepareBatchTransaction(externalProvider, tokenAddress, data, options);
 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
 		console.log("Inside sendTokensBatch, signedUserOperation = ", signedUserOperation);
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
