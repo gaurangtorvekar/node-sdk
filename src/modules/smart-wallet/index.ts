@@ -115,6 +115,42 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
+	private async prepareBatchTransaction(externalProvider: Web3Provider, to: string[], data: string[], options?: WalletStruct): Promise<UserOperationStruct> {
+		const { signer, entryPoint, simpleAccountFactory } = await this.initParams(externalProvider, options);
+		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
+		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, externalProvider);
+
+		const callData = simpleAccount.interface.encodeFunctionData("executeBatch", [to, data]);
+		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
+		const gasPrice = await externalProvider.getGasPrice();
+
+		//Check if the smart account contract has been deployed
+		const contractCode = await externalProvider.getCode(smartAccountAddress);
+		let nonce;
+		if (contractCode === "0x") {
+			nonce = 0;
+		} else {
+			nonce = await simpleAccount.callStatic.getNonce();
+			console.log("| Nonce: ", nonce);
+		}
+
+		const userOperation = {
+			sender: smartAccountAddress,
+			nonce: utils.hexlify(nonce),
+			initCode: contractCode === "0x" ? initCode : "0x",
+			callData,
+			callGasLimit: utils.hexlify(80_000),
+			verificationGasLimit: utils.hexlify(300_000),
+			preVerificationGas: utils.hexlify(40000),
+			maxFeePerGas: utils.hexlify(gasPrice),
+			maxPriorityFeePerGas: utils.hexlify(gasPrice),
+			paymasterAndData: "0x",
+			signature: "0x",
+		};
+		console.log("Inside prepareTransaction | Prepared user operation: ", userOperation);
+		return userOperation;
+	}
+
 	private async signUserOperation(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<UserOperationStruct> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
 
@@ -278,6 +314,20 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 
+	async sendTokensBatch(externalProvider: Web3Provider, to: string[], numberTokensinWei: number[], tokenAddress: string[], options?: WalletStruct): Promise<boolean> {
+		if (to.length !== tokenAddress.length || to.length !== numberTokensinWei.length || tokenAddress.length !== numberTokensinWei.length) {
+			throw new Error("to and value arrays must be of the same length");
+		}
+
+		const erc20Tokens = tokenAddress.map((tokenAddress) => ERC20__factory.connect(tokenAddress, externalProvider));
+		const data = erc20Tokens.map((erc20Token, index) => erc20Token.interface.encodeFunctionData("transfer", [to[index], numberTokensinWei[index]]));
+
+		const userOperation = await this.prepareBatchTransaction(externalProvider, to, data, options);
+		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
+		console.log("Inside sendTokensBatch, signedUserOperation = ", signedUserOperation);
+		return this.sendTransaction(externalProvider, signedUserOperation, options);
+	}
+
 	async sendTokensGasless(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<boolean> {
 		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
 		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);
@@ -343,6 +393,7 @@ export class SmartWallet extends Base {
 		return formatted_deposit;
 	}
 
+	//TODO - Add functionality to withdraw deposit from the entry point directly without having to go through the smart account
 	async withdrawDepositFromEntryPoint(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);

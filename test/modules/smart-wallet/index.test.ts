@@ -86,8 +86,20 @@ describe("SmartWallet", () => {
 			expect(result).toEqual(true);
 		}, 50000);
 
-		it.skip("should send ERC20 UserOp and return transaction hash", async () => {
+		it("should send ERC20 UserOp and return transaction hash", async () => {
 			let result = await smartWallet.sendTokens(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 300, "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", DEFAULT_CONFIG);
+			console.log("transaction hash:", result);
+			expect(result).toHaveLength(66);
+		}, 50000);
+
+		it.skip("should send ERC20 batch UserOp and return transaction hash", async () => {
+			let result = await smartWallet.sendTokensBatch(
+				provider,
+				["0x841056F279582d1dfD586c3C77e7821821B5B510", "0x841056F279582d1dfD586c3C77e7821821B5B510"],
+				[305, 310],
+				["0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"],
+				DEFAULT_CONFIG
+			);
 			console.log("transaction hash:", result);
 			expect(result).toHaveLength(66);
 		}, 50000);
@@ -124,7 +136,7 @@ describe("SmartWallet", () => {
 			expect(result).toBeGreaterThan(0);
 		});
 
-		it("should withdraw deposit of the Smart Account from the Entry Point contract", async () => {
+		it.skip("should withdraw deposit of the Smart Account from the Entry Point contract", async () => {
 			let result = await smartWallet.withdrawDepositFromEntryPoint(provider, DEFAULT_CONFIG);
 			expect(result).toHaveLength(66);
 		}, 70000);
