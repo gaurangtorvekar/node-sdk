@@ -97,7 +97,6 @@ export class SmartWallet extends Base {
 			nonce = await simpleAccount.callStatic.getNonce();
 			console.log("| Nonce: ", nonce);
 		}
-
 		const userOperation = {
 			sender: smartAccountAddress,
 			nonce: utils.hexlify(nonce),
@@ -105,7 +104,7 @@ export class SmartWallet extends Base {
 			callData,
 			callGasLimit: utils.hexlify(100_000),
 			verificationGasLimit: utils.hexlify(400_000),
-			preVerificationGas: utils.hexlify(50000),
+			preVerificationGas: utils.hexlify(60000),
 			maxFeePerGas: utils.hexlify(gasPrice),
 			maxPriorityFeePerGas: utils.hexlify(gasPrice),
 			paymasterAndData: "0x",
@@ -205,7 +204,7 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
-	private async sendTransaction(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<boolean> {
+	private async sendTransaction(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<string> {
 		//First find the native currency balance for the smartAccount
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
 		const eth_balance = await externalProvider.getBalance(smartAccountAddress);
@@ -220,23 +219,23 @@ export class SmartWallet extends Base {
 				userOperation: userOperation
 			});
 			// console.log(response);
-			const txHash = response?.data.data.txHash;
-			console.log("Transaction hash: ", txHash);
-			return txHash;
+			const userOpHash = response?.data.data.userOpHash;
+			console.log("UserOperation hash: ", userOpHash);
+			return userOpHash;
 		} catch (e) {
 			console.log("Error from sendTransaction api call: ", e);
 			return e;
 		}
 	}
 
-	async sendGenericMessageTransaction(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<boolean> {
+	async sendGenericMessageTransaction(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
 		console.log("Inside sendGenericMessageTransaction, signedUserOperation = ", userOperation);
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 
-	async sendGenericMessageTransactionGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<boolean> {
+	async sendGenericMessageTransactionGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation);
 		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
@@ -244,14 +243,14 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 
-	async sendNativeCurrency(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<boolean> {
+	async sendNativeCurrency(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
 		console.log("Inside sendNativeCurrency, signedUserOperation = ", userOperation);
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 
-	async sendNativeCurrencyGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<boolean> {
+	async sendNativeCurrencyGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation);
 		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
@@ -269,7 +268,7 @@ export class SmartWallet extends Base {
 	}
 
 	//TODO - Take token number as a string because it cannot handle big numbers
-	async sendTokens(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<boolean> {
+	async sendTokens(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<string> {
 		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
 		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);
 		const userOperation = await this.prepareTransaction(externalProvider, tokenAddress, 0, options, data);
@@ -278,7 +277,7 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 
-	async sendTokensGasless(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<boolean> {
+	async sendTokensGasless(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<string> {
 		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
 		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);
 		const userOperation = await this.prepareTransaction(externalProvider, tokenAddress, 0, options, data);
@@ -330,5 +329,19 @@ export class SmartWallet extends Base {
 
 		return contractCode !== "0x";
 	}
+
+	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number): Promise<Object> {
+		try {
+			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`);
+			console.log(response);
+			const trxReceipt = response?.data.data.trxReceipt;
+			console.log("Inside getTransactionReceiptByUserOpHash | UserOperation hash:", trxReceipt);
+			return trxReceipt;
+		} catch (e) {
+			console.log("Error from getTransactionReceiptByUserOpHash api call: ", e.message);
+			return e.message;
+		}
+	}
+
 }
 
