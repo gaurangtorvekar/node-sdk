@@ -81,18 +81,18 @@ export default function LoginPage() {
 			// 	process.env.NEXT_PUBLIC_PIMLICO_API_KEY
 			// );
 
-			const txReceipt = await bastion.smartWallet.sendTokensGasless(
-				ethersProvider,
-				"0x841056F279582d1dfD586c3C77e7821821B5B510",
-				321,
-				"0xe11A86849d99F524cAC3E7A0Ec1241828e332C62",
-				{
-					privateKey: process.env.NEXT_PUBLIC_PRIVATE_KEY || "",
-					rpcUrl: process.env.NEXT_PUBLIC_RPC_URL1 || "",
-					chainId: 80001,
-				},
-				process.env.NEXT_PUBLIC_PIMLICO_API_KEY
-			);
+			// const txReceipt = await bastion.smartWallet.sendTokensGasless(
+			// 	ethersProvider,
+			// 	"0x841056F279582d1dfD586c3C77e7821821B5B510",
+			// 	321,
+			// 	"0xe11A86849d99F524cAC3E7A0Ec1241828e332C62",
+			// 	{
+			// 		privateKey: process.env.NEXT_PUBLIC_PRIVATE_KEY || "",
+			// 		rpcUrl: process.env.NEXT_PUBLIC_RPC_URL1 || "",
+			// 		chainId: 80001,
+			// 	},
+			// 	process.env.NEXT_PUBLIC_PIMLICO_API_KEY
+			// );
 		} catch (e) {
 			console.error(e);
 		}
@@ -107,19 +107,13 @@ export default function LoginPage() {
 
 				<div className="mt-4">
 					<button onClick={() => loginWithProvider("Google")} className="py-2 px-4 w-full text-center bg-red-600 rounded-md text-white text-sm hover:bg-red-500">
-						Google
+						Particle Auth
 					</button>
 				</div>
 
 				<div className="mt-4">
 					<button onClick={() => loginWithProvider("LinkedIn")} className="py-2 px-4 w-full text-center bg-blue-600 rounded-md text-white text-sm hover:bg-blue-500">
-						LinkedIn
-					</button>
-				</div>
-
-				<div className="mt-4">
-					<button onClick={() => loginWithProvider("Facebook")} className="py-2 px-4 w-full text-center bg-blue-400 rounded-md text-white text-sm hover:bg-blue-300">
-						Facebook
+						Web3 Auth
 					</button>
 				</div>
 			</div>
