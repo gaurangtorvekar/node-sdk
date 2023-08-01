@@ -8,6 +8,8 @@ import { getERC20Paymaster } from "@pimlico/erc20-paymaster";
 import { BaseContract, BigNumber, BigNumberish, BytesLike, CallOverrides, ContractTransaction, Overrides, PayableOverrides, PopulatedTransaction, Signer } from "ethers";
 import { getChainName } from "../../helper";
 import axios from "axios";
+import { ECDSAKernelFactory__factory, Kernel__factory } from "./contracts"
+
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -42,7 +44,7 @@ export class SmartWallet extends Base {
 
 		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, signer);
 		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, signer);
-
+		const ecdsaKernelFactory = ECDSAKernelFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, signer);
 		return { signer, entryPoint, simpleAccountFactory };
 	}
 
