@@ -45,7 +45,7 @@ describe("SmartWallet", () => {
 
 		// Note - Had to add a timeout to this test because Blockchain TXNs take time
 		// Skipping this test for now because we don't want to create a new smart account every time we run the tests
-		it("should create a Smart Account and return true", async () => {
+		it.skip("should create a Smart Account and return true", async () => {
 			let result = await smartWallet.initSmartAccount(provider, DEFAULT_CONFIG);
 			expect(result).toEqual(true);
 		}, 20000);

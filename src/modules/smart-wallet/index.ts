@@ -8,7 +8,7 @@ import { getERC20Paymaster } from "@pimlico/erc20-paymaster";
 import { BaseContract, BigNumber, BigNumberish, BytesLike, CallOverrides, ContractTransaction, Overrides, PayableOverrides, PopulatedTransaction, Signer } from "ethers";
 import { getChainName } from "../../helper";
 import axios from "axios";
-import { ECDSAKernelFactory__factory, Kernel__factory } from "./contracts"
+import { ECDSAKernelFactory__factory, Kernel__factory } from "./contracts";
 
 const dotenv = require("dotenv");
 
@@ -17,63 +17,57 @@ dotenv.config();
 const resourceName = "smartWallet";
 
 export class SmartWallet extends Base {
-	ECDSA_KERNEL_ACCOUNT_FACTORY_ADDRESS = "0x7806D99EE789162E9609E979099D043f2bEff18f";
-	// ECDSA_KERNEL_ACCOUNT_FACTORY_ADDRESS =  "0x9406Cc6185a346906296840746125a0E44976454";
+	ECDSAKernelFactory_Address = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
+	// ECDSAKernelFactory_Address =  "0x9406Cc6185a346906296840746125a0E44976454";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
 
 	init(): Promise<void> {
-		//execute initazation steps
+		//execute initialization steps
 		return;
 	}
 
 	private async initParams(externalProvider: Web3Provider, options?: WalletStruct) {
-		// if (!params.privateKey || !params.rpcUrl) {
-		// 	throw new Error("Missing required params. You need to send a private key and an RPC URL");
-		// }
-		// const rpcProvider = new StaticJsonRpcProvider(params.rpcUrl);
 		let signer, wallet;
 		try {
 			const address = await externalProvider.getSigner().getAddress();
 			signer = externalProvider.getSigner();
 		} catch (e) {
 			signer = new Wallet(options.privateKey, externalProvider);
-			// wallet = new ethers.Wallet(options.privateKey);
-			// signer = wallet.connect(externalProvider);
 		}
 
 		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, signer);
-		// const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.ECDSA_KERNEL_ACCOUNT_FACTORY_ADDRESS, signer);
-		const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSA_KERNEL_ACCOUNT_FACTORY_ADDRESS, signer);
+		// const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
+		const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
 		return { signer, entryPoint, kernelAccountFactory };
 	}
 
 	async getSmartAccountAddress(externalProvider: Web3Provider, options?: WalletStruct): Promise<string> {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
-		const initCode = utils.hexConcat([this.ECDSA_KERNEL_ACCOUNT_FACTORY_ADDRESS, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
-		let smartAccountAddress;
-		try {
-			await entryPoint.callStatic.getSenderAddress(initCode);
-			throw new Error("Expected getSenderAddress() to revert");
-		} catch (e) {
-			const data = e.message.match(/0x6ca7b806([a-fA-F\d]*)/)?.[1];
-			if (!data) {
-				throw new Error("Failed to parse revert data");
-			}
-			smartAccountAddress = utils.getAddress(`0x${data.slice(24, 64)}`);
-		}
+		// const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
+		// let smartAccountAddress;
+		// try {
+		// 	await entryPoint.callStatic.getSenderAddress(initCode);
+		// 	throw new Error("Expected getSenderAddress() to revert");
+		// } catch (e) {
+		// 	const data = e.message.match(/0x6ca7b806([a-fA-F\d]*)/)?.[1];
+		// 	if (!data) {
+		// 		throw new Error("Failed to parse revert data");
+		// 	}
+		// 	smartAccountAddress = utils.getAddress(`0x${data.slice(24, 64)}`);
+		// }
+		console.log("Signer address = ", await signer.getAddress());
+		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(await signer.getAddress(), 0);
 
 		console.log("Inside getSmartAccountAddress, Calculated sender address:", smartAccountAddress);
 		return smartAccountAddress;
 	}
 
-	//TODO - Update the functions below to use the new provider instead of the params object
-
-	//Feature - Enable creating this Smart Account on multiple chains
+	//TODO - Feature - Enable creating this Smart Account on multiple chains
 	async initSmartAccount(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
-		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
+		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
 
 		const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), 0);
 		await createTx.wait();
@@ -88,7 +82,7 @@ export class SmartWallet extends Base {
 		const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
 		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, "1"]);
-		const initCode = utils.hexConcat([this.ECDSA_KERNEL_ACCOUNT_FACTORY_ADDRESS, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
+		const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
 		const gasPrice = await externalProvider.getGasPrice();
 
 		//Check if the smart account contract has been deployed
@@ -100,7 +94,7 @@ export class SmartWallet extends Base {
 			// nonce = await kernelAccount.callStatic["getNonce()"];
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 			console.log("| Nonce: ", nonce);
-			await entryPoint.depositTo(smartAccountAddress, {value: "10000000000000000"});
+			await entryPoint.depositTo(smartAccountAddress, { value: "10000000000000000" });
 		}
 
 		const userOperation = {
@@ -126,7 +120,7 @@ export class SmartWallet extends Base {
 	// 	const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
 	// 	const callData = kernelAccount.interface.encodeFunctionData("executeBatch", [to, data]);
-	// 	const initCode = utils.hexConcat([this.ECDSA_KERNEL_ACCOUNT_FACTORY_ADDRESS, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
+	// 	const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
 	// 	const gasPrice = await externalProvider.getGasPrice();
 
 	// 	//Check if the smart account contract has been deployed
