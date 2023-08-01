@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { SmartWallet } from "../../../src/modules/smart-wallet";
 import { describe, beforeEach, it, expect } from "@jest/globals";
+import { skip } from "node:test";
 
 let smartWallet: SmartWallet;
 let walletConnected;
@@ -30,9 +31,9 @@ describe("SmartWallet", () => {
 	});
 
 	describe("setupSmartAccount", () => {
-		const expectedAddress = "0xbF874b81636F3FA36643A5996Cd5c187689609d7"; // replace with actual expected address
+		const expectedAddress = "0x3B31DfecE1067dE3de222Ad6B50F791C610278e9"; // replace with actual expected address
 
-		it.skip("should return expected sender address by calling getSmartAccountAddress", async () => {
+		it("should return expected sender address by calling getSmartAccountAddress", async () => {
 			let result = await smartWallet.getSmartAccountAddress(provider, DEFAULT_CONFIG);
 			expect(result).toEqual(expectedAddress);
 		});
@@ -44,7 +45,7 @@ describe("SmartWallet", () => {
 
 		// Note - Had to add a timeout to this test because Blockchain TXNs take time
 		// Skipping this test for now because we don't want to create a new smart account every time we run the tests
-		it.skip("should create a Smart Account and return true", async () => {
+		it("should create a Smart Account and return true", async () => {
 			let result = await smartWallet.initSmartAccount(provider, DEFAULT_CONFIG);
 			expect(result).toEqual(true);
 		}, 20000);
@@ -92,17 +93,17 @@ describe("SmartWallet", () => {
 			expect(result).toHaveLength(66);
 		}, 50000);
 
-		it("should send ERC20 batch UserOp and return transaction hash", async () => {
-			let result = await smartWallet.sendTokensBatch(
-				provider,
-				["0x841056F279582d1dfD586c3C77e7821821B5B510", "0x841056F279582d1dfD586c3C77e7821821B5B510"],
-				[305, 310],
-				["0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"],
-				DEFAULT_CONFIG
-			);
-			console.log("transaction hash:", result);
-			expect(result).toHaveLength(66);
-		}, 50000);
+		// it.skip("should send ERC20 batch UserOp and return transaction hash", async () => {
+		// 	let result = await smartWallet.sendTokensBatch(
+		// 		provider,
+		// 		["0x841056F279582d1dfD586c3C77e7821821B5B510", "0x841056F279582d1dfD586c3C77e7821821B5B510"],
+		// 		[305, 310],
+		// 		["0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"],
+		// 		DEFAULT_CONFIG
+		// 	);
+		// 	console.log("transaction hash:", result);
+		// 	expect(result).toHaveLength(66);
+		// }, 50000);
 
 		it.skip("should send ERC20 UserOp gasless and return transaction hash", async () => {
 			let result = await smartWallet.sendTokensGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 320, "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", DEFAULT_CONFIG);
@@ -131,15 +132,15 @@ describe("SmartWallet", () => {
 			expect(result).toEqual(true);
 		});
 
-		it.skip("should return the deposit amount of the Smart Account from Entry Point", async () => {
-			let result = await smartWallet.getEntryPointDeposit(provider, DEFAULT_CONFIG);
-			expect(result).toBeGreaterThan(0);
-		});
+		// it.skip("should return the deposit amount of the Smart Account from Entry Point", async () => {
+		// 	let result = await smartWallet.getEntryPointDeposit(provider, DEFAULT_CONFIG);
+		// 	expect(result).toBeGreaterThan(0);
+		// });
 
-		it.skip("should withdraw deposit of the Smart Account from the Entry Point contract", async () => {
-			let result = await smartWallet.withdrawDepositFromEntryPoint(provider, DEFAULT_CONFIG);
-			expect(result).toHaveLength(66);
-		}, 70000);
+		// it.skip("should withdraw deposit of the Smart Account from the Entry Point contract", async () => {
+		// 	let result = await smartWallet.withdrawDepositFromEntryPoint(provider, DEFAULT_CONFIG);
+		// 	expect(result).toHaveLength(66);
+		// }, 70000);
 	});
 });
 

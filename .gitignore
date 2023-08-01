@@ -167,3 +167,4 @@ dist
 # typescript
 /sdk-test-app/*.tsbuildinfo
 /sdk-test-app/next-env.d.ts
+src/modules/.DS_Store
