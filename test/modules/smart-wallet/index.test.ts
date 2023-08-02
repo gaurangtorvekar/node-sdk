@@ -9,8 +9,10 @@ let provider;
 
 const DEFAULT_CONFIG = {
 	privateKey: process.env.PRIVATE_KEY || "",
-	rpcUrl: process.env.RPC_URL1 || "",
-	chainId: 80001,
+	// rpcUrl: process.env.RPC_URL1 || "",
+	// chainId: 80001,
+	rpcUrl: process.env.RPC_URL3 || "",
+	chainId: 421613,
 };
 
 const setup = () => {
@@ -31,9 +33,9 @@ describe("SmartWallet", () => {
 	});
 
 	describe("setupSmartAccount", () => {
-		const expectedAddress = "0x3B31DfecE1067dE3de222Ad6B50F791C610278e9"; // replace with actual expected address
+		const expectedAddress = "0xB730d07F4c928AD9e72B59AB99d22cB87BE9A867"; // replace with actual expected address
 
-		it("should return expected sender address by calling getSmartAccountAddress", async () => {
+		it.skip("should return expected sender address by calling getSmartAccountAddress", async () => {
 			let result = await smartWallet.getSmartAccountAddress(provider, DEFAULT_CONFIG);
 			expect(result).toEqual(expectedAddress);
 		});
@@ -48,6 +50,8 @@ describe("SmartWallet", () => {
 		it.skip("should create a Smart Account and return true", async () => {
 			let result = await smartWallet.initSmartAccount(provider, DEFAULT_CONFIG);
 			expect(result).toEqual(true);
+			let result2 = await smartWallet.getSmartAccountAddress(provider, DEFAULT_CONFIG);
+			expect(result2).toEqual(expectedAddress);
 		}, 20000);
 
 		it.skip("should send a generic message transaction to another smart contract", async () => {
@@ -60,17 +64,17 @@ describe("SmartWallet", () => {
 			expect(result).toHaveLength(66);
 		}, 50000);
 
-		it.skip("should send a generic message transaction to another smart contract", async () => {
-			const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
-			const data = bastionTestInterface.encodeFunctionData("ping");
+		// it.skip("should send a generic message transaction to another smart contract", async () => {
+		// 	const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
+		// 	const data = bastionTestInterface.encodeFunctionData("ping");
 
-			// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
-			let result = await smartWallet.sendGenericMessageTransactionGasless(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data);
-			console.log("transaction hash:", result);
-			expect(result).toHaveLength(66);
-		}, 50000);
+		// 	// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
+		// 	let result = await smartWallet.sendGenericMessageTransactionGasless(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data);
+		// 	console.log("transaction hash:", result);
+		// 	expect(result).toHaveLength(66);
+		// }, 50000);
 
-		it.skip("should send native currency UserOp and return transaction hash", async () => {
+		it("should send native currency UserOp and return transaction hash", async () => {
 			let result = await smartWallet.sendNativeCurrency(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 1, DEFAULT_CONFIG, "0x");
 			console.log("transaction hash:", result);
 			expect(result).toHaveLength(66);

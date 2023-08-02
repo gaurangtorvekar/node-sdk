@@ -4,5 +4,5 @@
 export type { ECDSAKernelFactory } from "./ECDSAKernelFactory";
 export type { Kernel } from "./Kernel";
 export * as factories from "./factories";
-export { Kernel__factory } from "./factories/Kernel__factory";
 export { ECDSAKernelFactory__factory } from "./factories/ECDSAKernelFactory__factory";
+export { Kernel__factory } from "./factories/Kernel__factory";

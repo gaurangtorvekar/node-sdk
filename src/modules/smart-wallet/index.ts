@@ -69,7 +69,9 @@ export class SmartWallet extends Base {
 	async initSmartAccount(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
 		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
 
-		const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), 0);
+		const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), 0, {
+			gasLimit: 300000,
+		});
 		await createTx.wait();
 		console.log("Created smart account", createTx.hash);
 
@@ -94,7 +96,7 @@ export class SmartWallet extends Base {
 			// nonce = await kernelAccount.callStatic["getNonce()"];
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 			console.log("| Nonce: ", nonce);
-			await entryPoint.depositTo(smartAccountAddress, { value: "10000000000000000" });
+			// await entryPoint.depositTo(smartAccountAddress, {value: "10000000000000"});
 		}
 
 		const userOperation = {
