@@ -83,7 +83,9 @@ export class SmartWallet extends Base {
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
 		const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
-		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, "1"]);
+		//TODO - make this customizable based on the type of transaction
+		// 0 = call, 1 = delegatecall (type of Operation)
+		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, 0]);
 		const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
 		const gasPrice = await externalProvider.getGasPrice();
 
@@ -116,12 +118,12 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
-	// private async prepareBatchTransaction(externalProvider: Web3Provider, to: string[], data: string[], options?: WalletStruct): Promise<UserOperationStruct> {
+	// private async prepareBatchTransaction(externalProvider: Web3Provider, to: string[], data: string[], value: number[], options?: WalletStruct): Promise<UserOperationStruct> {
 	// 	const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 	// 	const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
 	// 	const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
-	// 	const callData = kernelAccount.interface.encodeFunctionData("executeBatch", [to, data]);
+	// 	const callData = kernelAccount.interface.encodeFunctionData("executeBatch", [to, value, data, ]);
 	// 	const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
 	// 	const gasPrice = await externalProvider.getGasPrice();
 
@@ -317,6 +319,14 @@ export class SmartWallet extends Base {
 		console.log("Inside sendTokens, signedUserOperation = ", signedUserOperation);
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
+
+	// async sendNativeCurrencyBatch(externalProvider: Web3Provider, to: string[], value: number[], options?: WalletStruct): Promise<boolean> {
+	// 	if (to.length !== value.length) {
+	// 		throw new Error("to and value arrays must be of the same length");
+	// 	}
+
+	// 	const userOperation = await this.prepareBatchTransaction(externalProvider, to, [], options);
+	// }
 
 	// async sendTokensBatch(externalProvider: Web3Provider, to: string[], numberTokensinWei: number[], tokenAddress: string[], options?: WalletStruct): Promise<boolean> {
 	// 	if (to.length !== tokenAddress.length || to.length !== numberTokensinWei.length || tokenAddress.length !== numberTokensinWei.length) {
