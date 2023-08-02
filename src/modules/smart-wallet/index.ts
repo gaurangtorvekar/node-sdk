@@ -244,7 +244,7 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
-	private async sendTransaction(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<boolean> {
+	private async sendTransaction(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<string> {
 		//First find the native currency balance for the smartAccount
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
 		const eth_balance = await externalProvider.getBalance(smartAccountAddress);
@@ -268,14 +268,14 @@ export class SmartWallet extends Base {
 		}
 	}
 
-	async sendGenericMessageTransaction(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<boolean> {
+	async sendGenericMessageTransaction(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
 		console.log("Inside sendGenericMessageTransaction, signedUserOperation = ", userOperation);
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 
-	async sendGenericMessageTransactionGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<boolean> {
+	async sendGenericMessageTransactionGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation);
 		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
@@ -283,18 +283,20 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 
-	async sendNativeCurrency(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<boolean> {
+	async sendNativeCurrency(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-		return this.sendTransaction(externalProvider, signedUserOperation, options);
+		const res = await this.sendTransaction(externalProvider, signedUserOperation, options);
+		return res;
 	}
 
-	async sendNativeCurrencyGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<boolean> {
+	async sendNativeCurrencyGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation);
 		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
 		console.log("Inside sendNativeCurrencyGasless, signedUserOperation = ", signedUserOperation);
-		return this.sendTransaction(externalProvider, signedUserOperation, options);
+		const res = await this.sendTransaction(externalProvider, signedUserOperation, options);
+		return res;
 	}
 
 	async sendNativeCurrencyERC20Gas(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string, pimlicoApiKey?: string): Promise<boolean> {
@@ -307,7 +309,7 @@ export class SmartWallet extends Base {
 	}
 
 	//TODO - Take token number as a string because it cannot handle big numbers
-	async sendTokens(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<boolean> {
+	async sendTokens(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<string> {
 		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
 		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);
 		const userOperation = await this.prepareTransaction(externalProvider, tokenAddress, 0, options, data);
@@ -330,7 +332,7 @@ export class SmartWallet extends Base {
 	// 	return this.sendTransaction(externalProvider, signedUserOperation, options);
 	// }
 
-	async sendTokensGasless(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<boolean> {
+	async sendTokensGasless(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<string> {
 		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
 		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);
 		const userOperation = await this.prepareTransaction(externalProvider, tokenAddress, 0, options, data);

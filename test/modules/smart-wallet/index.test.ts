@@ -80,7 +80,7 @@ describe("SmartWallet", () => {
 			expect(result).toHaveLength(66);
 		}, 70000);
 
-		it.skip("should send gasless native currency userop and return transaction hash", async () => {
+		it("should send gasless native currency userop and return transaction hash", async () => {
 			let result = await smartWallet.sendNativeCurrencyGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 1, DEFAULT_CONFIG, "0x");
 			console.log("transaction hash:", result);
 			expect(result).toHaveLength(66);
