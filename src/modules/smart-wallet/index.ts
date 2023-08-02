@@ -17,7 +17,7 @@ dotenv.config();
 const resourceName = "smartWallet";
 
 export class SmartWallet extends Base {
-	ECDSA_KERNEL_ACCOUNT_FACTORY_ADDRESS = "0x7806D99EE789162E9609E979099D043f2bEff18f";
+	ECDSA_KERNEL_ACCOUNT_FACTORY_ADDRESS = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
 	// ECDSA_KERNEL_ACCOUNT_FACTORY_ADDRESS =  "0x9406Cc6185a346906296840746125a0E44976454";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
@@ -75,7 +75,13 @@ export class SmartWallet extends Base {
 	async initSmartAccount(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 
-		const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), 0);
+		const createTx = await kernelAccountFactory.createAccount(
+			await signer.getAddress(),
+			0,
+			{
+				gasLimit:300000
+			}
+		);
 		await createTx.wait();
 		console.log("Created smart account", createTx.hash);
 
@@ -100,7 +106,7 @@ export class SmartWallet extends Base {
 			// nonce = await kernelAccount.callStatic["getNonce()"];
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 			console.log("| Nonce: ", nonce);
-			await entryPoint.depositTo(smartAccountAddress, {value: "10000000000000000"});
+			// await entryPoint.depositTo(smartAccountAddress, {value: "10000000000000"});
 		}
 
 		const userOperation = {
