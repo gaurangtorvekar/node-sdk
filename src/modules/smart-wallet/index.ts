@@ -96,7 +96,7 @@ export class SmartWallet extends Base {
 			// nonce = await kernelAccount.callStatic["getNonce()"];
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 			console.log("| Nonce: ", nonce);
-			// await entryPoint.depositTo(smartAccountAddress, {value: "10000000000000"});
+			await entryPoint.depositTo(smartAccountAddress, { value: "10000000000000" });
 		}
 
 		const userOperation = {
@@ -156,7 +156,9 @@ export class SmartWallet extends Base {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
 
 		const signature = await signer.signMessage(utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
-		userOperation.signature = signature;
+		const padding = "0x00000000";
+		const signatureWithPadding = utils.hexConcat([padding, signature]);
+		userOperation.signature = signatureWithPadding;
 
 		console.log("Inside signUserOperation | Signed user Operation: ", userOperation);
 
@@ -284,7 +286,6 @@ export class SmartWallet extends Base {
 	async sendNativeCurrency(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<boolean> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-		console.log("Inside sendNativeCurrency, signedUserOperation = ", userOperation);
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 
