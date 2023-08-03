@@ -58,22 +58,16 @@ describe("SmartWallet", () => {
 		}, 20000);
 
 		it.skip("should send a generic message transaction to another smart contract", async () => {
-			const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
-			const data = bastionTestInterface.encodeFunctionData("ping");
+			//This contract is deployed on arb-goerli
+			const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+			const contractABI = new ethers.utils.Interface(["function safeMint(address to) public"]);
+
+			const data = contractABI.encodeFunctionData("safeMint", ["0x2429EB38cB9b456160937e11aefc80879a2d2712"]);
+			console.log("Inside generic message test | Data:", data);
 
 			// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
-			let result = await smartWallet.sendGenericMessageTransaction(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data);
+			let result = await smartWallet.sendGenericMessageTransaction(provider, contractAddress, 0, DEFAULT_CONFIG, data);
 			console.log("UserOperation hash:", result);
-			expect(result).toHaveLength(66);
-		}, 50000);
-
-		it.skip("should send a generic message gasless transaction to another smart contract", async () => {
-			const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
-			const data = bastionTestInterface.encodeFunctionData("ping");
-
-			// 	// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
-			let result = await smartWallet.sendGenericMessageTransactionGasless(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data);
-			console.log("userOp hash:", result);
 			expect(result).toHaveLength(66);
 		}, 50000);
 
@@ -167,14 +161,28 @@ describe("SmartWallet", () => {
 			const nftContract = new Contract(contractAddress, contractABI, bastionSigner);
 
 			const receipt = await nftContract.safeMint(address);
-			await receipt.wait();
-			console.log("TXN hash:", receipt.hash);
+			// await receipt.wait();
+			// console.log("TXN hash:", receipt.hash);
 
 			// console.log(`NFT balance: ${await nftContract.balanceOf(address)}`);
 
 			let result = true;
 			expect(result).toEqual(true);
 		}, 70000);
+
+		it.skip("should send a generic message gasless transaction to another smart contract", async () => {
+			//This contract is deployed on arb-goerli
+			const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+			const contractABI = new ethers.utils.Interface(["function safeMint(address to) public"]);
+
+			const data = contractABI.encodeFunctionData("safeMint", ["0x2429EB38cB9b456160937e11aefc80879a2d2712"]);
+			console.log("Inside generic message test | Data:", data);
+
+			// 	// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
+			let result = await smartWallet.sendGenericMessageTransactionGasless(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data);
+			console.log("userOp hash:", result);
+			expect(result).toHaveLength(66);
+		}, 50000);
 	});
 });
 

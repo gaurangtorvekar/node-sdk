@@ -1,6 +1,7 @@
 import { Deferrable } from "ethers/lib/utils";
 import { Provider, Web3Provider, TransactionRequest, TransactionResponse } from "@ethersproject/providers";
 import { Wallet, constants, utils, ethers, Signer } from "ethers";
+import { SmartWallet } from "../smart-wallet";
 // import { Signer } from "@ethersproject/abstract-signer";
 
 export interface BastionSignerOptions {
@@ -12,12 +13,23 @@ export interface BastionSignerOptions {
 export class BastionSigner extends Signer {
 	signer: Signer;
 	address: string;
+	provider: Web3Provider;
+	options: BastionSignerOptions;
+	smartWallet: SmartWallet;
 
 	constructor() {
 		super();
 	}
 
 	async init(externalProvider: Web3Provider, options?: BastionSignerOptions) {
+		const config = {
+			apiKey: "testApiKey",
+			baseUrl: "testBaseUrl",
+		};
+		this.smartWallet = new SmartWallet(config);
+		this.provider = externalProvider;
+		this.options = options;
+
 		try {
 			const address = await externalProvider.getSigner().getAddress();
 			this.signer = externalProvider.getSigner();
@@ -48,6 +60,11 @@ export class BastionSigner extends Signer {
 
 	async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
 		console.log("Inside sendTransaction = ", transaction);
+
+		if (!transaction.value) {
+			transaction.value = 0;
+		}
+		let result = await this.smartWallet.sendGenericMessageTransactionGasless(this.provider, transaction.to as string, transaction.value as number, this.options, transaction.data as string);
 		return this.signer.sendTransaction(transaction);
 	}
 

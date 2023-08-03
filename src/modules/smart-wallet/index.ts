@@ -47,7 +47,7 @@ export class SmartWallet extends Base {
 		console.log("Signer address = ", await signer.getAddress());
 		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(await signer.getAddress(), 0);
 
-		console.log("Inside getSmartAccountAddress, Calculated sender address:", smartAccountAddress);
+		console.log("Inside getSmartAccountAddress, Calculated Smart Wallet address:", smartAccountAddress);
 		return smartAccountAddress;
 	}
 
@@ -84,7 +84,7 @@ export class SmartWallet extends Base {
 			// nonce = await kernelAccount.callStatic["getNonce()"];
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 			console.log("| Nonce: ", nonce);
-			await entryPoint.depositTo(smartAccountAddress, { value: "10000000000000" });
+			// await entryPoint.depositTo(smartAccountAddress, { value: "10000000000000" });
 		}
 		const userOperation = {
 			sender: smartAccountAddress,
@@ -263,7 +263,8 @@ export class SmartWallet extends Base {
 		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation);
 		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
 		console.log("Inside sendGenericMessageTransactionGasless, signedUserOperation = ", signedUserOperation);
-		return this.sendTransaction(externalProvider, signedUserOperation, options);
+		const res = await this.sendTransaction(externalProvider, signedUserOperation, options);
+		return res;
 	}
 
 	async sendNativeCurrency(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
