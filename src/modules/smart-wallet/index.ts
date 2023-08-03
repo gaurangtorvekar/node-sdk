@@ -100,7 +100,6 @@ export class SmartWallet extends Base {
 			console.log("| Nonce: ", nonce);
 			await entryPoint.depositTo(smartAccountAddress, { value: "10000000000000" });
 		}
-
 		const userOperation = {
 			sender: smartAccountAddress,
 			nonce: utils.hexlify(nonce),
@@ -261,9 +260,9 @@ export class SmartWallet extends Base {
 				userOperation: userOperation,
 			});
 			// console.log(response);
-			const txHash = response?.data.data.txHash;
-			console.log("Transaction hash: ", txHash);
-			return txHash;
+			const userOpHash = response?.data.data.userOpHash;
+			console.log("UserOperation hash: ", userOpHash);
+			return userOpHash;
 		} catch (e) {
 			console.log("Error from sendTransaction api call: ", e);
 			return e;
@@ -320,7 +319,7 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 
-	// async sendNativeCurrencyBatch(externalProvider: Web3Provider, to: string[], value: number[], options?: WalletStruct): Promise<boolean> {
+	// async sendNativeCurrencyBatch(externalProvider: Web3Provider, to: string[], value: number[], options?: WalletStruct): Promise<string> {
 	// 	if (to.length !== value.length) {
 	// 		throw new Error("to and value arrays must be of the same length");
 	// 	}
@@ -328,7 +327,7 @@ export class SmartWallet extends Base {
 	// 	const userOperation = await this.prepareBatchTransaction(externalProvider, to, [], options);
 	// }
 
-	// async sendTokensBatch(externalProvider: Web3Provider, to: string[], numberTokensinWei: number[], tokenAddress: string[], options?: WalletStruct): Promise<boolean> {
+	// async sendTokensBatch(externalProvider: Web3Provider, to: string[], numberTokensinWei: number[], tokenAddress: string[], options?: WalletStruct): Promise<string> {
 	// 	if (to.length !== tokenAddress.length || to.length !== numberTokensinWei.length || tokenAddress.length !== numberTokensinWei.length) {
 	// 		throw new Error("to and value arrays must be of the same length");
 	// 	}
@@ -393,6 +392,19 @@ export class SmartWallet extends Base {
 		console.log("Inside isSmartAccountDeployed | Smart account code: ", contractCode);
 
 		return contractCode !== "0x";
+	}
+
+	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number): Promise<Object> {
+		try {
+			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`);
+			console.log(response);
+			const trxReceipt = response?.data.data.trxReceipt;
+			console.log("Inside getTransactionReceiptByUserOpHash | UserOperation hash:", trxReceipt);
+			return trxReceipt;
+		} catch (e) {
+			console.log("Error from getTransactionReceiptByUserOpHash api call: ", e.message);
+			return e.message;
+		}
 	}
 
 	// async getEntryPointDeposit(externalProvider: Web3Provider, options?: WalletStruct): Promise<number> {
