@@ -18,7 +18,6 @@ const resourceName = "smartWallet";
 
 export class SmartWallet extends Base {
 	ECDSAKernelFactory_Address = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
-	// ECDSAKernelFactory_Address =  "0x9406Cc6185a346906296840746125a0E44976454";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
@@ -38,7 +37,6 @@ export class SmartWallet extends Base {
 		}
 
 		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, signer);
-		// const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
 		const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
 		return { signer, entryPoint, kernelAccountFactory };
 	}
@@ -46,18 +44,6 @@ export class SmartWallet extends Base {
 	async getSmartAccountAddress(externalProvider: Web3Provider, options?: WalletStruct): Promise<string> {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
-		// const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
-		// let smartAccountAddress;
-		// try {
-		// 	await entryPoint.callStatic.getSenderAddress(initCode);
-		// 	throw new Error("Expected getSenderAddress() to revert");
-		// } catch (e) {
-		// 	const data = e.message.match(/0x6ca7b806([a-fA-F\d]*)/)?.[1];
-		// 	if (!data) {
-		// 		throw new Error("Failed to parse revert data");
-		// 	}
-		// 	smartAccountAddress = utils.getAddress(`0x${data.slice(24, 64)}`);
-		// }
 		console.log("Signer address = ", await signer.getAddress());
 		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(await signer.getAddress(), 0);
 
@@ -184,10 +170,6 @@ export class SmartWallet extends Base {
 
 	private async getPaymasterSponsorshipERC20(externalProvider: Web3Provider, chainId: number, userOperation, pimlicoApiKey: string, options?: WalletStruct): Promise<UserOperationStruct> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
-		// NOTE: Not getting used in this function
-		// const chain = await getChainName(chainId); // find the list of chain names on the Pimlico verifying paymaster reference page
-		// const pimlicoEndpoint = `https://api.pimlico.io/v1/${chain}/rpc?apikey=${pimlicoApiKey}`;
-		// const pimlicoProvider = new StaticJsonRpcProvider(pimlicoEndpoint);
 
 		const erc20Paymaster = await getERC20Paymaster(externalProvider, "USDC");
 		const erc20PaymasterAddress = erc20Paymaster.contract.address;
