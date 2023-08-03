@@ -8,6 +8,8 @@ import { getERC20Paymaster } from "@pimlico/erc20-paymaster";
 import { BaseContract, BigNumber, BigNumberish, BytesLike, CallOverrides, ContractTransaction, Overrides, PayableOverrides, PopulatedTransaction, Signer } from "ethers";
 import { getChainName } from "../../helper";
 import axios from "axios";
+import { ECDSAKernelFactory__factory, Kernel__factory } from "./contracts";
+
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -15,64 +17,61 @@ dotenv.config();
 const resourceName = "smartWallet";
 
 export class SmartWallet extends Base {
-	SIMPLE_ACCOUNT_FACTORY_ADDRESS = "0x9406Cc6185a346906296840746125a0E44976454";
+	ECDSAKernelFactory_Address = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
+	// ECDSAKernelFactory_Address =  "0x9406Cc6185a346906296840746125a0E44976454";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
 
 	init(): Promise<void> {
-		//execute initazation steps
+		//execute initialization steps
 		return;
 	}
 
 	private async initParams(externalProvider: Web3Provider, options?: WalletStruct) {
-		// if (!params.privateKey || !params.rpcUrl) {
-		// 	throw new Error("Missing required params. You need to send a private key and an RPC URL");
-		// }
-		// const rpcProvider = new StaticJsonRpcProvider(params.rpcUrl);
 		let signer, wallet;
 		try {
 			const address = await externalProvider.getSigner().getAddress();
 			signer = externalProvider.getSigner();
 		} catch (e) {
 			signer = new Wallet(options.privateKey, externalProvider);
-			// wallet = new ethers.Wallet(options.privateKey);
-			// signer = wallet.connect(externalProvider);
 		}
 
 		const entryPoint = EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, signer);
-		const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, signer);
-
-		return { signer, entryPoint, simpleAccountFactory };
+		// const simpleAccountFactory = SimpleAccountFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
+		const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
+		return { signer, entryPoint, kernelAccountFactory };
 	}
 
 	async getSmartAccountAddress(externalProvider: Web3Provider, options?: WalletStruct): Promise<string> {
-		const { signer, entryPoint, simpleAccountFactory } = await this.initParams(externalProvider, options);
+		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
-		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
-		let smartAccountAddress;
-		try {
-			await entryPoint.callStatic.getSenderAddress(initCode);
-			throw new Error("Expected getSenderAddress() to revert");
-		} catch (e) {
-			const data = e.message.match(/0x6ca7b806([a-fA-F\d]*)/)?.[1];
-			if (!data) {
-				throw new Error("Failed to parse revert data");
-			}
-			smartAccountAddress = utils.getAddress(`0x${data.slice(24, 64)}`);
-		}
+		// const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
+		// let smartAccountAddress;
+		// try {
+		// 	await entryPoint.callStatic.getSenderAddress(initCode);
+		// 	throw new Error("Expected getSenderAddress() to revert");
+		// } catch (e) {
+		// 	const data = e.message.match(/0x6ca7b806([a-fA-F\d]*)/)?.[1];
+		// 	if (!data) {
+		// 		throw new Error("Failed to parse revert data");
+		// 	}
+		// 	smartAccountAddress = utils.getAddress(`0x${data.slice(24, 64)}`);
+		// }
+		console.log("Signer address = ", await signer.getAddress());
+		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(await signer.getAddress(), 0);
 
 		console.log("Inside getSmartAccountAddress, Calculated sender address:", smartAccountAddress);
 		return smartAccountAddress;
 	}
 
-	//TODO - Update the functions below to use the new provider instead of the params object
-
-	//Feature - Enable creating this Smart Account on multiple chains
+	//TODO - Feature - Enable creating this Smart Account on multiple chains
 	async initSmartAccount(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
-		const { signer, entryPoint, simpleAccountFactory } = await this.initParams(externalProvider, options);
+		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
 
-		const createTx = await simpleAccountFactory.createAccount(await signer.getAddress(), 0);
+		const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), 0, {
+			gasLimit: 300000,
+		});
 		await createTx.wait();
 		console.log("Created smart account", createTx.hash);
 
@@ -80,12 +79,14 @@ export class SmartWallet extends Base {
 	}
 
 	private async prepareTransaction(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<UserOperationStruct> {
-		const { signer, entryPoint, simpleAccountFactory } = await this.initParams(externalProvider, options);
+		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, externalProvider);
+		const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
-		const callData = simpleAccount.interface.encodeFunctionData("execute", [to, value, data]);
-		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
+		//TODO - make this customizable based on the type of transaction
+		// 0 = call, 1 = delegatecall (type of Operation)
+		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, 0]);
+		const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
 		const gasPrice = await externalProvider.getGasPrice();
 
 		//Check if the smart account contract has been deployed
@@ -94,8 +95,10 @@ export class SmartWallet extends Base {
 		if (contractCode === "0x") {
 			nonce = 0;
 		} else {
-			nonce = await simpleAccount.callStatic.getNonce();
+			// nonce = await kernelAccount.callStatic["getNonce()"];
+			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 			console.log("| Nonce: ", nonce);
+			await entryPoint.depositTo(smartAccountAddress, { value: "10000000000000" });
 		}
 		const userOperation = {
 			sender: smartAccountAddress,
@@ -104,7 +107,7 @@ export class SmartWallet extends Base {
 			callData,
 			callGasLimit: utils.hexlify(80_000),
 			verificationGasLimit: utils.hexlify(300_000),
-			preVerificationGas: utils.hexlify(40000),
+			preVerificationGas: utils.hexlify(60000),
 			maxFeePerGas: utils.hexlify(gasPrice),
 			maxPriorityFeePerGas: utils.hexlify(gasPrice),
 			paymasterAndData: "0x",
@@ -114,47 +117,49 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
-	private async prepareBatchTransaction(externalProvider: Web3Provider, to: string[], data: string[], options?: WalletStruct): Promise<UserOperationStruct> {
-		const { signer, entryPoint, simpleAccountFactory } = await this.initParams(externalProvider, options);
-		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, externalProvider);
+	// private async prepareBatchTransaction(externalProvider: Web3Provider, to: string[], data: string[], value: number[], options?: WalletStruct): Promise<UserOperationStruct> {
+	// 	const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
+	// 	const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
+	// 	const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
-		const callData = simpleAccount.interface.encodeFunctionData("executeBatch", [to, data]);
-		const initCode = utils.hexConcat([this.SIMPLE_ACCOUNT_FACTORY_ADDRESS, simpleAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
-		const gasPrice = await externalProvider.getGasPrice();
+	// 	const callData = kernelAccount.interface.encodeFunctionData("executeBatch", [to, value, data, ]);
+	// 	const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
+	// 	const gasPrice = await externalProvider.getGasPrice();
 
-		//Check if the smart account contract has been deployed
-		const contractCode = await externalProvider.getCode(smartAccountAddress);
-		let nonce;
-		if (contractCode === "0x") {
-			nonce = 0;
-		} else {
-			nonce = await simpleAccount.callStatic.getNonce();
-			console.log("| Nonce: ", nonce);
-		}
+	// 	//Check if the smart account contract has been deployed
+	// 	const contractCode = await externalProvider.getCode(smartAccountAddress);
+	// 	let nonce;
+	// 	if (contractCode === "0x") {
+	// 		nonce = 0;
+	// 	} else {
+	// 		nonce = await kernelAccount.callStatic.getNonce();
+	// 		console.log("| Nonce: ", nonce);
+	// 	}
 
-		const userOperation = {
-			sender: smartAccountAddress,
-			nonce: utils.hexlify(nonce),
-			initCode: contractCode === "0x" ? initCode : "0x",
-			callData,
-			callGasLimit: utils.hexlify(80_000),
-			verificationGasLimit: utils.hexlify(300_000),
-			preVerificationGas: utils.hexlify(40000),
-			maxFeePerGas: utils.hexlify(gasPrice),
-			maxPriorityFeePerGas: utils.hexlify(gasPrice),
-			paymasterAndData: "0x",
-			signature: "0x",
-		};
-		console.log("Inside prepareTransaction | Prepared user operation: ", userOperation);
-		return userOperation;
-	}
+	// 	const userOperation = {
+	// 		sender: smartAccountAddress,
+	// 		nonce: utils.hexlify(nonce),
+	// 		initCode: contractCode === "0x" ? initCode : "0x",
+	// 		callData,
+	// 		callGasLimit: utils.hexlify(80_000),
+	// 		verificationGasLimit: utils.hexlify(300_000),
+	// 		preVerificationGas: utils.hexlify(40000),
+	// 		maxFeePerGas: utils.hexlify(gasPrice),
+	// 		maxPriorityFeePerGas: utils.hexlify(gasPrice),
+	// 		paymasterAndData: "0x",
+	// 		signature: "0x",
+	// 	};
+	// 	console.log("Inside prepareTransaction | Prepared user operation: ", userOperation);
+	// 	return userOperation;
+	// }
 
 	private async signUserOperation(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<UserOperationStruct> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
 
 		const signature = await signer.signMessage(utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
-		userOperation.signature = signature;
+		const padding = "0x00000000";
+		const signatureWithPadding = utils.hexConcat([padding, signature]);
+		userOperation.signature = signatureWithPadding;
 
 		console.log("Inside signUserOperation | Signed user Operation: ", userOperation);
 
@@ -188,7 +193,7 @@ export class SmartWallet extends Base {
 		const erc20PaymasterAddress = erc20Paymaster.contract.address;
 		const usdcTokenAddress = await erc20Paymaster.contract.token();
 		const usdcToken = ERC20__factory.connect(usdcTokenAddress, signer);
-		const simpleAccount = SimpleAccount__factory.connect(erc20PaymasterAddress, externalProvider);
+		const kernelAccount = Kernel__factory.connect(erc20PaymasterAddress, externalProvider);
 
 		console.log("Inside getPaymasterSponsorshipERC20 | userOperation: ", userOperation);
 		const originalCallData = userOperation.callData;
@@ -217,7 +222,7 @@ export class SmartWallet extends Base {
 			const value = 0;
 			const data = approveData;
 
-			const callData = simpleAccount.interface.encodeFunctionData("execute", [to, value, data]);
+			const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, "1"]);
 			userOperation.callData = callData;
 
 			const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
@@ -282,8 +287,8 @@ export class SmartWallet extends Base {
 	async sendNativeCurrency(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-		console.log("Inside sendNativeCurrency, signedUserOperation = ", userOperation);
-		return this.sendTransaction(externalProvider, signedUserOperation, options);
+		const res = await this.sendTransaction(externalProvider, signedUserOperation, options);
+		return res;
 	}
 
 	async sendNativeCurrencyGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
@@ -291,7 +296,8 @@ export class SmartWallet extends Base {
 		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation);
 		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
 		console.log("Inside sendNativeCurrencyGasless, signedUserOperation = ", signedUserOperation);
-		return this.sendTransaction(externalProvider, signedUserOperation, options);
+		const res = await this.sendTransaction(externalProvider, signedUserOperation, options);
+		return res;
 	}
 
 	async sendNativeCurrencyERC20Gas(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string, pimlicoApiKey?: string): Promise<boolean> {
@@ -313,19 +319,27 @@ export class SmartWallet extends Base {
 		return this.sendTransaction(externalProvider, signedUserOperation, options);
 	}
 
-	async sendTokensBatch(externalProvider: Web3Provider, to: string[], numberTokensinWei: number[], tokenAddress: string[], options?: WalletStruct): Promise<string> {
-		if (to.length !== tokenAddress.length || to.length !== numberTokensinWei.length || tokenAddress.length !== numberTokensinWei.length) {
-			throw new Error("to and value arrays must be of the same length");
-		}
+	// async sendNativeCurrencyBatch(externalProvider: Web3Provider, to: string[], value: number[], options?: WalletStruct): Promise<string> {
+	// 	if (to.length !== value.length) {
+	// 		throw new Error("to and value arrays must be of the same length");
+	// 	}
 
-		const erc20Tokens = tokenAddress.map((tokenAddress) => ERC20__factory.connect(tokenAddress, externalProvider));
-		const data = erc20Tokens.map((erc20Token, index) => erc20Token.interface.encodeFunctionData("transfer", [to[index], numberTokensinWei[index]]));
+	// 	const userOperation = await this.prepareBatchTransaction(externalProvider, to, [], options);
+	// }
 
-		const userOperation = await this.prepareBatchTransaction(externalProvider, tokenAddress, data, options);
-		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-		console.log("Inside sendTokensBatch, signedUserOperation = ", signedUserOperation);
-		return this.sendTransaction(externalProvider, signedUserOperation, options);
-	}
+	// async sendTokensBatch(externalProvider: Web3Provider, to: string[], numberTokensinWei: number[], tokenAddress: string[], options?: WalletStruct): Promise<string> {
+	// 	if (to.length !== tokenAddress.length || to.length !== numberTokensinWei.length || tokenAddress.length !== numberTokensinWei.length) {
+	// 		throw new Error("to and value arrays must be of the same length");
+	// 	}
+
+	// 	const erc20Tokens = tokenAddress.map((tokenAddress) => ERC20__factory.connect(tokenAddress, externalProvider));
+	// 	const data = erc20Tokens.map((erc20Token, index) => erc20Token.interface.encodeFunctionData("transfer", [to[index], numberTokensinWei[index]]));
+
+	// 	const userOperation = await this.prepareBatchTransaction(externalProvider, tokenAddress, data, options);
+	// 	const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
+	// 	console.log("Inside sendTokensBatch, signedUserOperation = ", signedUserOperation);
+	// 	return this.sendTransaction(externalProvider, signedUserOperation, options);
+	// }
 
 	async sendTokensGasless(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<string> {
 		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
@@ -393,31 +407,31 @@ export class SmartWallet extends Base {
 		}
 	}
 
-	async getEntryPointDeposit(externalProvider: Web3Provider, options?: WalletStruct): Promise<number> {
-		const { signer, simpleAccountFactory } = await this.initParams(externalProvider, options);
-		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, signer);
-		const deposit = await simpleAccount.getDeposit();
-		// Convert deposit to ETH
-		const formatted_deposit = Math.floor(parseFloat(utils.formatEther(deposit)) * 100000000000) / 100000000000;
-		console.log("Inside getEntryPointDeposit | Deposit: ", formatted_deposit);
+	// async getEntryPointDeposit(externalProvider: Web3Provider, options?: WalletStruct): Promise<number> {
+	// 	const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
+	// 	const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
+	// 	const kernelAccount = Kernel__factory.connect(smartAccountAddress, signer);
+	// 	const deposit = await kernelAccount.getDeposit();
+	// 	// Convert deposit to ETH
+	// 	const formatted_deposit = Math.floor(parseFloat(utils.formatEther(deposit)) * 100000000000) / 100000000000;
+	// 	console.log("Inside getEntryPointDeposit | Deposit: ", formatted_deposit);
 
-		return formatted_deposit;
-	}
+	// 	return formatted_deposit;
+	// }
 
 	//TODO - Add functionality to withdraw deposit from the entry point directly without having to go through the smart account
-	async withdrawDepositFromEntryPoint(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
-		const { signer, entryPoint } = await this.initParams(externalProvider, options);
-		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		const simpleAccount = SimpleAccount__factory.connect(smartAccountAddress, signer);
-		const deposit = await simpleAccount.getDeposit();
-		console.log("Inside withdrawDepositFromEntryPoint | Deposit: ", deposit.toNumber());
+	// async withdrawDepositFromEntryPoint(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
+	// 	const { signer, entryPoint } = await this.initParams(externalProvider, options);
+	// 	const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
+	// 	const kernelAccount = Kernel__factory.connect(smartAccountAddress, signer);
+	// 	const deposit = await kernelAccount.getDeposit();
+	// 	console.log("Inside withdrawDepositFromEntryPoint | Deposit: ", deposit.toNumber());
 
-		const withdrawTx = await simpleAccount.withdrawDepositTo(smartAccountAddress, deposit.toNumber() / 5);
-		await withdrawTx.wait();
+	// 	const withdrawTx = await kernelAccount.withdrawDepositTo(smartAccountAddress, deposit.toNumber() / 5);
+	// 	await withdrawTx.wait();
 
-		console.log("Inside withdrawDepositFromEntryPoint | Withdraw transaction hash: ", withdrawTx.hash);
-		return true;
-	}
+	// 	console.log("Inside withdrawDepositFromEntryPoint | Withdraw transaction hash: ", withdrawTx.hash);
+	// 	return true;
+	// }
 }
 

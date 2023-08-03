@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { SmartWallet } from "../../../src/modules/smart-wallet";
 import { describe, beforeEach, it, expect } from "@jest/globals";
+import { skip } from "node:test";
 
 let smartWallet: SmartWallet;
 let walletConnected;
@@ -8,10 +9,12 @@ let provider;
 
 const DEFAULT_CONFIG = {
 	privateKey: process.env.PRIVATE_KEY || "",
-	rpcUrl: process.env.RPC_URL1 || "",
-	chainId: 80001,
+	// rpcUrl: process.env.RPC_URL1 || "",
+	// chainId: 80001,
 	// rpcUrl: process.env.RPC_URL2 || "",
 	// chainId: 5,
+	rpcUrl: process.env.RPC_URL3 || "",
+	chainId: 421613,
 };
 
 const setup = () => {
@@ -32,7 +35,7 @@ describe("SmartWallet", () => {
 	});
 
 	describe("setupSmartAccount", () => {
-		const expectedAddress = "0xbF874b81636F3FA36643A5996Cd5c187689609d7"; // replace with actual expected address
+		const expectedAddress = "0xB730d07F4c928AD9e72B59AB99d22cB87BE9A867"; // replace with actual expected address
 
 		it.skip("should return expected sender address by calling getSmartAccountAddress", async () => {
 			let result = await smartWallet.getSmartAccountAddress(provider, DEFAULT_CONFIG);
@@ -49,6 +52,8 @@ describe("SmartWallet", () => {
 		it.skip("should create a Smart Account and return true", async () => {
 			let result = await smartWallet.initSmartAccount(provider, DEFAULT_CONFIG);
 			expect(result).toEqual(true);
+			let result2 = await smartWallet.getSmartAccountAddress(provider, DEFAULT_CONFIG);
+			expect(result2).toEqual(expectedAddress);
 		}, 20000);
 
 		it.skip("should send a generic message transaction to another smart contract", async () => {
@@ -61,19 +66,19 @@ describe("SmartWallet", () => {
 			expect(result).toHaveLength(66);
 		}, 50000);
 
-		it.skip("should send a generic message transaction to another smart contract", async () => {
-			const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
-			const data = bastionTestInterface.encodeFunctionData("ping");
+		// it.skip("should send a generic message transaction to another smart contract", async () => {
+		// 	const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
+		// 	const data = bastionTestInterface.encodeFunctionData("ping");
 
-			// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
-			let result = await smartWallet.sendGenericMessageTransactionGasless(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data);
-			console.log("UserOperation hash:", result);
-			expect(result).toHaveLength(66);
-		}, 50000);
+		// 	// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
+		// 	let result = await smartWallet.sendGenericMessageTransactionGasless(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data);
+		// 	console.log("transaction hash:", result);
+		// 	expect(result).toHaveLength(66);
+		// }, 50000);
 
-		it.skip("should send native currency UserOp and return user-operation hash", async () => {
-			let result = await smartWallet.sendNativeCurrency(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 19, DEFAULT_CONFIG, "0x");
-			console.log("UserOperation hash:", result);
+		it("should send native currency UserOp and return transaction hash", async () => {
+			let result = await smartWallet.sendNativeCurrency(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 1, DEFAULT_CONFIG, "0x");
+			console.log("transaction hash:", result);
 			expect(result).toHaveLength(66);
 			//Note: fails if immediately called, trx needs some time to execute
 			// let trxReceipt = await smartWallet.getTransactionReceiptByUserOpHash(result, DEFAULT_CONFIG.chainId);
@@ -81,9 +86,9 @@ describe("SmartWallet", () => {
 
 		}, 70000);
 
-		it("should send gasless native currency userop and return user-operation hash", async () => {
-			let result = await smartWallet.sendNativeCurrencyGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 22, DEFAULT_CONFIG, "0x");
-			console.log("UserOperation hash:", result);
+		it("should send gasless native currency userop and return transaction hash", async () => {
+			let result = await smartWallet.sendNativeCurrencyGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 1, DEFAULT_CONFIG, "0x");
+			console.log("transaction hash:", result);
 			expect(result).toHaveLength(66);
 		}, 50000);
 
@@ -98,17 +103,17 @@ describe("SmartWallet", () => {
 			expect(result).toHaveLength(66);
 		}, 50000);
 
-		it("should send ERC20 batch UserOp and return user operation hash", async () => {
-			let result = await smartWallet.sendTokensBatch(
-				provider,
-				["0x841056F279582d1dfD586c3C77e7821821B5B510", "0x841056F279582d1dfD586c3C77e7821821B5B510"],
-				[305, 310],
-				["0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"],
-				DEFAULT_CONFIG
-			);
-			console.log("UserOperation hash:", result);
-			expect(result).toHaveLength(66);
-		}, 50000);
+		// it.skip("should send ERC20 batch UserOp and return transaction hash", async () => {
+		// 	let result = await smartWallet.sendTokensBatch(
+		// 		provider,
+		// 		["0x841056F279582d1dfD586c3C77e7821821B5B510", "0x841056F279582d1dfD586c3C77e7821821B5B510"],
+		// 		[305, 310],
+		// 		["0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"],
+		// 		DEFAULT_CONFIG
+		// 	);
+		// 	console.log("transaction hash:", result);
+		// 	expect(result).toHaveLength(66);
+		// }, 50000);
 
 		it.skip("should send ERC20 UserOp gasless and return transaction hash", async () => {
 			let result = await smartWallet.sendTokensGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 320, "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", DEFAULT_CONFIG);
@@ -137,15 +142,15 @@ describe("SmartWallet", () => {
 			expect(result).toEqual(true);
 		});
 
-		it.skip("should return the deposit amount of the Smart Account from Entry Point", async () => {
-			let result = await smartWallet.getEntryPointDeposit(provider, DEFAULT_CONFIG);
-			expect(result).toBeGreaterThan(0);
-		});
+		// it.skip("should return the deposit amount of the Smart Account from Entry Point", async () => {
+		// 	let result = await smartWallet.getEntryPointDeposit(provider, DEFAULT_CONFIG);
+		// 	expect(result).toBeGreaterThan(0);
+		// });
 
-		it.skip("should withdraw deposit of the Smart Account from the Entry Point contract", async () => {
-			let result = await smartWallet.withdrawDepositFromEntryPoint(provider, DEFAULT_CONFIG);
-			expect(result).toHaveLength(66);
-		}, 70000);
+		// it.skip("should withdraw deposit of the Smart Account from the Entry Point contract", async () => {
+		// 	let result = await smartWallet.withdrawDepositFromEntryPoint(provider, DEFAULT_CONFIG);
+		// 	expect(result).toHaveLength(66);
+		// }, 70000);
 	});
 });
 
