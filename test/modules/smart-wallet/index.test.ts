@@ -10,12 +10,12 @@ let provider;
 
 const DEFAULT_CONFIG = {
 	privateKey: process.env.PRIVATE_KEY || "",
-	rpcUrl: process.env.RPC_URL1 || "", //mumbai
-	chainId: 80001,
+	// rpcUrl: process.env.RPC_URL1 || "", //mumbai
+	// chainId: 80001,
 	// rpcUrl: process.env.RPC_URL2 || "", // goerli
 	// chainId: 5,
-	// rpcUrl: process.env.RPC_URL3 || "", //arb-goerli
-	// chainId: 421613,
+	rpcUrl: process.env.RPC_URL3 || "", //arb-goerli
+	chainId: 421613,
 };
 
 const setup = () => {
@@ -152,25 +152,29 @@ describe("SmartWallet", () => {
 		// 	let result = await smartWallet.withdrawDepositFromEntryPoint(provider, DEFAULT_CONFIG);
 		// 	expect(result).toHaveLength(66);
 		// }, 70000);
-		it("Should use the new bastion signer", async () => {
-			const contractAddress = "0x34bE7f35132E97915633BC1fc020364EA5134863";
-			const contractABI = ["function mint(address _to) public", "function balanceOf(address owner) external view returns (uint256 balance)"];
 
-			const signer = new BastionSigner();
-			await signer.init(provider, DEFAULT_CONFIG);
+		it("should use the new bastion signer", async () => {
+			let bastionSigner = new BastionSigner();
+			await bastionSigner.init(provider, DEFAULT_CONFIG);
 
-			const address = await signer.getAddress();
+			//This contract is deployed on arb-goerli
+			const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+			const contractABI = ["function safeMint(address to) public", "function balanceOf(address owner) external view returns (uint256 balance)"];
+
+			const address = await bastionSigner.getAddress();
 			console.log("My address:", address);
 
-			const nftContract = new Contract(contractAddress, contractABI, signer);
+			const nftContract = new Contract(contractAddress, contractABI, bastionSigner);
 
-			const receipt = await nftContract.mint(address);
+			const receipt = await nftContract.safeMint(address);
 			await receipt.wait();
-			console.log(`NFT balance: ${await nftContract.balanceOf(address)}`);
+			console.log("TXN hash:", receipt.hash);
 
-			const result = true;
+			// console.log(`NFT balance: ${await nftContract.balanceOf(address)}`);
+
+			let result = true;
 			expect(result).toEqual(true);
-		}, 50000);
+		}, 70000);
 	});
 });
 
