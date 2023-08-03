@@ -28,7 +28,7 @@ export class BastionSigner extends Signer {
 	}
 
 	async getAddress(): Promise<string> {
-		console.log("Inside getAddress = ", this.signer);
+		console.log("Inside getAddress = ", this.signer.getAddress());
 		return this.signer.getAddress();
 	}
 
@@ -45,6 +45,7 @@ export class BastionSigner extends Signer {
 	}
 
 	async sendTransaction(transaction: any): Promise<any> {
+		console.log("Inside sendTransaction = ", transaction);
 		return this.signer.sendTransaction(transaction);
 	}
 
