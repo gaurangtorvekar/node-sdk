@@ -9,12 +9,12 @@ let provider;
 
 const DEFAULT_CONFIG = {
 	privateKey: process.env.PRIVATE_KEY || "",
-	// rpcUrl: process.env.RPC_URL1 || "",
-	// chainId: 80001,
-	// rpcUrl: process.env.RPC_URL2 || "",
-	// chainId: 5,
-	rpcUrl: process.env.RPC_URL3 || "",
-	chainId: 421613,
+	rpcUrl: process.env.RPC_URL1 || "", //mumbai
+	chainId: 80001,
+	// rpcUrl: process.env.RPC_URL2 || "", // goerli
+	// chainId: 5, 
+	// rpcUrl: process.env.RPC_URL3 || "", //arb-goerli
+	// chainId: 421613,
 };
 
 const setup = () => {
@@ -66,19 +66,19 @@ describe("SmartWallet", () => {
 			expect(result).toHaveLength(66);
 		}, 50000);
 
-		// it.skip("should send a generic message transaction to another smart contract", async () => {
-		// 	const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
-		// 	const data = bastionTestInterface.encodeFunctionData("ping");
+		it.skip("should send a generic message gasless transaction to another smart contract", async () => {
+			const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
+			const data = bastionTestInterface.encodeFunctionData("ping");
 
 		// 	// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
-		// 	let result = await smartWallet.sendGenericMessageTransactionGasless(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data);
-		// 	console.log("transaction hash:", result);
-		// 	expect(result).toHaveLength(66);
-		// }, 50000);
+			let result = await smartWallet.sendGenericMessageTransactionGasless(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data);
+			console.log("userOp hash:", result);
+			expect(result).toHaveLength(66);
+		}, 50000);
 
-		it("should send native currency UserOp and return transaction hash", async () => {
+		it.skip("should send native currency UserOp and return userOp hash", async () => {
 			let result = await smartWallet.sendNativeCurrency(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 1, DEFAULT_CONFIG, "0x");
-			console.log("transaction hash:", result);
+			console.log("UserOperation hash:", result);
 			expect(result).toHaveLength(66);
 			//Note: fails if immediately called, trx needs some time to execute
 			// let trxReceipt = await smartWallet.getTransactionReceiptByUserOpHash(result, DEFAULT_CONFIG.chainId);
@@ -86,24 +86,25 @@ describe("SmartWallet", () => {
 
 		}, 70000);
 
-		it("should send gasless native currency userop and return transaction hash", async () => {
+		it.skip("should send gasless native currency userop and return userOp hash", async () => {
 			let result = await smartWallet.sendNativeCurrencyGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 1, DEFAULT_CONFIG, "0x");
-			console.log("transaction hash:", result);
+			console.log("UserOperation hash:", result);
 			expect(result).toHaveLength(66);
 		}, 50000);
 
-		it.skip("should send gasless native currency userop and return true", async () => {
+		it.skip("should send gasless native currency userop and userOp hash", async () => {
 			let result = await smartWallet.sendNativeCurrencyERC20Gas(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 22, DEFAULT_CONFIG, "0x", process.env.PIMLICO_API_KEY);
-			expect(result).toEqual(true);
+			console.log("UserOperation hash:", result);
+			expect(result).toHaveLength(66);
 		}, 50000);
 
-		it.skip("should send ERC20 UserOp and return user-operation hash", async () => {
+		it.skip("should send ERC20 UserOp and return userOp hash", async () => {
 			let result = await smartWallet.sendTokens(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 300, "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", DEFAULT_CONFIG);
 			console.log("UserOperation hash:", result);
 			expect(result).toHaveLength(66);
 		}, 50000);
 
-		// it.skip("should send ERC20 batch UserOp and return transaction hash", async () => {
+		// it.skip("should send ERC20 batch UserOp and return userOp hash", async () => {
 		// 	let result = await smartWallet.sendTokensBatch(
 		// 		provider,
 		// 		["0x841056F279582d1dfD586c3C77e7821821B5B510", "0x841056F279582d1dfD586c3C77e7821821B5B510"],
@@ -111,13 +112,13 @@ describe("SmartWallet", () => {
 		// 		["0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"],
 		// 		DEFAULT_CONFIG
 		// 	);
-		// 	console.log("transaction hash:", result);
-		// 	expect(result).toHaveLength(66);
+		// 		console.log("UserOperation hash:", result);
+		// 		expect(result).toHaveLength(66);
 		// }, 50000);
 
-		it.skip("should send ERC20 UserOp gasless and return transaction hash", async () => {
+		it.skip("should send ERC20 UserOp gasless and return userOp hash", async () => {
 			let result = await smartWallet.sendTokensGasless(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 320, "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", DEFAULT_CONFIG);
-			console.log("transaction hash:", result);
+			console.log("UserOperation hash:", result);
 			expect(result).toHaveLength(66);
 		}, 70000);
 
