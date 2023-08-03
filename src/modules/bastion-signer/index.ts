@@ -1,8 +1,7 @@
 import { Deferrable } from "ethers/lib/utils";
-import { Provider, Web3Provider } from "@ethersproject/providers";
-import { Wallet, constants, utils, ethers } from "ethers";
-import { Signer } from "@ethersproject/abstract-signer";
-import { TransactionRequest } from "@ethersproject/abstract-provider";
+import { Provider, Web3Provider, TransactionRequest, TransactionResponse } from "@ethersproject/providers";
+import { Wallet, constants, utils, ethers, Signer } from "ethers";
+// import { Signer } from "@ethersproject/abstract-signer";
 
 export interface BastionSignerOptions {
 	privateKey: string;
@@ -23,7 +22,10 @@ export class BastionSigner extends Signer {
 			const address = await externalProvider.getSigner().getAddress();
 			this.signer = externalProvider.getSigner();
 		} catch (e) {
+			console.log("Error in init, creating a wallet========");
+			console.log("External Provider = ", externalProvider);
 			this.signer = new Wallet(options.privateKey, externalProvider);
+			console.log("Signer = ", this.signer);
 		}
 	}
 
@@ -44,7 +46,7 @@ export class BastionSigner extends Signer {
 		return this.signer.getTransactionCount(blockTag);
 	}
 
-	async sendTransaction(transaction: any): Promise<any> {
+	async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
 		console.log("Inside sendTransaction = ", transaction);
 		return this.signer.sendTransaction(transaction);
 	}
