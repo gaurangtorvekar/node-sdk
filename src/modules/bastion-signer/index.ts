@@ -11,7 +11,7 @@ export interface BastionSignerOptions {
 }
 
 export class BastionSigner extends Signer {
-	signer: Signer;
+	signer: any;
 	address: string;
 
 	constructor() {
@@ -23,12 +23,13 @@ export class BastionSigner extends Signer {
 			const address = await externalProvider.getSigner().getAddress();
 			this.signer = externalProvider.getSigner();
 		} catch (e) {
-			this.signer = new Wallet(options.privateKey, externalProvider);
+			console.log("Error in init = ", externalProvider);
+			this.signer = await new Wallet(options.privateKey, externalProvider);
 		}
 	}
 
 	async getAddress(): Promise<string> {
-		console.log("Inside getAddress = ", this.signer);
+		console.log("Inside getAddress = ", await this.signer.getAddress());
 		return this.signer.getAddress();
 	}
 
@@ -45,6 +46,7 @@ export class BastionSigner extends Signer {
 	}
 
 	async sendTransaction(transaction: any): Promise<any> {
+		console.log("Inside sendTransaction = ", transaction);
 		return this.signer.sendTransaction(transaction);
 	}
 

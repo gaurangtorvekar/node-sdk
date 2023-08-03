@@ -1,5 +1,6 @@
-import { ethers } from "ethers";
+import { ethers, Contract } from "ethers";
 import { SmartWallet } from "../../../src/modules/smart-wallet";
+import { BastionSigner } from "../../../src/modules/bastion-signer";
 import { describe, beforeEach, it, expect } from "@jest/globals";
 import { skip } from "node:test";
 
@@ -12,7 +13,7 @@ const DEFAULT_CONFIG = {
 	rpcUrl: process.env.RPC_URL1 || "", //mumbai
 	chainId: 80001,
 	// rpcUrl: process.env.RPC_URL2 || "", // goerli
-	// chainId: 5, 
+	// chainId: 5,
 	// rpcUrl: process.env.RPC_URL3 || "", //arb-goerli
 	// chainId: 421613,
 };
@@ -70,7 +71,7 @@ describe("SmartWallet", () => {
 			const bastionTestInterface = new ethers.utils.Interface(["function ping() public returns (string memory)"]);
 			const data = bastionTestInterface.encodeFunctionData("ping");
 
-		// 	// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
+			// 	// TODO - this is the BastionTest contract on Polygon Mumbai, create a variable which has the address on other chains as well
 			let result = await smartWallet.sendGenericMessageTransactionGasless(provider, "0xaE8B777b54Ed34b4e7b1E68aAa7aD3FB99E1e176", 0, DEFAULT_CONFIG, data);
 			console.log("userOp hash:", result);
 			expect(result).toHaveLength(66);
@@ -83,7 +84,6 @@ describe("SmartWallet", () => {
 			//Note: fails if immediately called, trx needs some time to execute
 			// let trxReceipt = await smartWallet.getTransactionReceiptByUserOpHash(result, DEFAULT_CONFIG.chainId);
 			// console.log("TrxReceipt", trxReceipt);
-
 		}, 70000);
 
 		it.skip("should send gasless native currency userop and return userOp hash", async () => {
@@ -152,6 +152,25 @@ describe("SmartWallet", () => {
 		// 	let result = await smartWallet.withdrawDepositFromEntryPoint(provider, DEFAULT_CONFIG);
 		// 	expect(result).toHaveLength(66);
 		// }, 70000);
+		it("Should use the new bastion signer", async () => {
+			const contractAddress = "0x34bE7f35132E97915633BC1fc020364EA5134863";
+			const contractABI = ["function mint(address _to) public", "function balanceOf(address owner) external view returns (uint256 balance)"];
+
+			const signer = new BastionSigner();
+			await signer.init(provider, DEFAULT_CONFIG);
+
+			const address = await signer.getAddress();
+			console.log("My address:", address);
+
+			const nftContract = new Contract(contractAddress, contractABI, signer);
+
+			const receipt = await nftContract.mint(address);
+			await receipt.wait();
+			console.log(`NFT balance: ${await nftContract.balanceOf(address)}`);
+
+			const result = true;
+			expect(result).toEqual(true);
+		}, 50000);
 	});
 });
 
