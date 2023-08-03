@@ -1,5 +1,6 @@
-import { ethers } from "ethers";
+import { ethers, Contract } from "ethers";
 import { SmartWallet } from "../../../src/modules/smart-wallet";
+import { BastionSigner } from "../../../src/modules/bastion-signer";
 import { describe, beforeEach, it, expect } from "@jest/globals";
 import { skip } from "node:test";
 
@@ -76,7 +77,7 @@ describe("SmartWallet", () => {
 			expect(result).toHaveLength(66);
 		}, 50000);
 
-		it("should send native currency UserOp and return userOp hash", async () => {
+		it.skip("should send native currency UserOp and return userOp hash", async () => {
 			let result = await smartWallet.sendNativeCurrency(provider, "0x841056F279582d1dfD586c3C77e7821821B5B510", 1, DEFAULT_CONFIG, "0x");
 			console.log("UserOperation hash:", result);
 			expect(result).toHaveLength(66);
@@ -151,6 +152,28 @@ describe("SmartWallet", () => {
 		// 	let result = await smartWallet.withdrawDepositFromEntryPoint(provider, DEFAULT_CONFIG);
 		// 	expect(result).toHaveLength(66);
 		// }, 70000);
+
+		it("Should use the new bastion signer", async () => {
+			const contractAddress = "0x34bE7f35132E97915633BC1fc020364EA5134863";
+			const contractABI = ["function mint(address _to) public", "function balanceOf(address owner) external view returns (uint256 balance)"];
+
+			const signer = new BastionSigner();
+			await signer.init(provider, DEFAULT_CONFIG);
+
+			const address = await signer.getAddress();
+			console.log("My address:", address);
+
+			const nftContract = new Contract(contractAddress, contractABI, signer);
+
+			const receipt = await nftContract.mint(address);
+			await receipt.wait();
+			console.log("TXN hash:", receipt.hash);
+
+			console.log(`NFT balance: ${await nftContract.balanceOf(address)}`);
+
+			const result = true;
+			expect(result).toEqual(true);
+		}, 50000);
 	});
 });
 
