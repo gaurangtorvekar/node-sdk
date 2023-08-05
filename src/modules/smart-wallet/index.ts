@@ -64,7 +64,7 @@ export class SmartWallet extends Base {
 		return true;
 	}
 
-	private async prepareTransaction(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<UserOperationStruct> {
+	async prepareTransaction(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<UserOperationStruct> {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
 		const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
@@ -139,7 +139,7 @@ export class SmartWallet extends Base {
 	// 	return userOperation;
 	// }
 
-	private async signUserOperation(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<UserOperationStruct> {
+	async signUserOperation(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<UserOperationStruct> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
 
 		const signature = await signer.signMessage(utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
@@ -152,7 +152,7 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
-	private async getPaymasterSponsorship(chainId: number, userOperation: UserOperationStruct): Promise<UserOperationStruct> {
+	async getPaymasterSponsorship(chainId: number, userOperation: UserOperationStruct): Promise<UserOperationStruct> {
 		try {
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/payment-sponsorship`, {
 				chainId: chainId,
@@ -168,7 +168,7 @@ export class SmartWallet extends Base {
 		}
 	}
 
-	private async getPaymasterSponsorshipERC20(externalProvider: Web3Provider, chainId: number, userOperation, pimlicoApiKey: string, options?: WalletStruct): Promise<UserOperationStruct> {
+	async getPaymasterSponsorshipERC20(externalProvider: Web3Provider, chainId: number, userOperation, pimlicoApiKey: string, options?: WalletStruct): Promise<UserOperationStruct> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
 
 		const erc20Paymaster = await getERC20Paymaster(externalProvider, "USDC");
@@ -227,7 +227,7 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
-	private async sendTransaction(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<string> {
+	async sendTransaction(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<string> {
 		//First find the native currency balance for the smartAccount
 		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
 		const eth_balance = await externalProvider.getBalance(smartAccountAddress);
