@@ -147,29 +147,6 @@ describe("SmartWallet", () => {
 		// 	expect(result).toHaveLength(66);
 		// }, 70000);
 
-		it("should use the new bastion signer", async () => {
-			let bastionSigner = new BastionSigner();
-			await bastionSigner.init(provider, DEFAULT_CONFIG);
-
-			//This contract is deployed on arb-goerli
-			const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
-			const contractABI = ["function safeMint(address to) public", "function balanceOf(address owner) external view returns (uint256 balance)"];
-
-			const address = await bastionSigner.getAddress();
-			console.log("My address:", address);
-
-			const nftContract = new Contract(contractAddress, contractABI, bastionSigner);
-
-			const receipt = await nftContract.safeMint(address);
-			// await receipt.wait();
-			// console.log("TXN hash:", receipt.hash);
-
-			// console.log(`NFT balance: ${await nftContract.balanceOf(address)}`);
-
-			let result = true;
-			expect(result).toEqual(true);
-		}, 70000);
-
 		it.skip("should send a generic message gasless transaction to another smart contract", async () => {
 			//This contract is deployed on arb-goerli
 			const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";

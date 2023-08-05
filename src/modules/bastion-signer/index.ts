@@ -9,6 +9,7 @@ export interface BastionSignerOptions {
 	privateKey: string;
 	rpcUrl: string;
 	chainId: number;
+	gasToken?: string;
 }
 
 export class BastionSigner extends Signer {
@@ -35,16 +36,14 @@ export class BastionSigner extends Signer {
 			const address = await externalProvider.getSigner().getAddress();
 			this.signer = externalProvider.getSigner();
 		} catch (e) {
-			console.log("Error in init, creating a wallet========");
-			console.log("External Provider = ", externalProvider);
 			this.signer = new Wallet(options.privateKey, externalProvider);
-			console.log("Signer = ", this.signer);
 		}
 	}
 
 	async getAddress(): Promise<string> {
-		console.log("Inside getAddress = ", await this.signer.getAddress());
-		return this.signer.getAddress();
+		const address = await this.smartWallet.getSmartAccountAddress(this.provider, this.options);
+		console.log("Inside getAddress = ", address);
+		return address;
 	}
 
 	async signMessage(message: string | ethers.utils.Bytes): Promise<string> {
