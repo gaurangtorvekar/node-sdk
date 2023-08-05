@@ -251,38 +251,6 @@ export class SmartWallet extends Base {
 		}
 	}
 
-	async sendGenericMessageTransaction(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
-		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
-		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-		console.log("Inside sendGenericMessageTransaction, signedUserOperation = ", userOperation);
-		return this.sendTransaction(externalProvider, signedUserOperation, options);
-	}
-
-	async sendGenericMessageTransactionGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
-		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
-		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation);
-		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
-		console.log("Inside sendGenericMessageTransactionGasless, signedUserOperation = ", signedUserOperation);
-		const res = await this.sendTransaction(externalProvider, signedUserOperation, options);
-		return res;
-	}
-
-	async sendNativeCurrency(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
-		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
-		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-		const res = await this.sendTransaction(externalProvider, signedUserOperation, options);
-		return res;
-	}
-
-	async sendNativeCurrencyGasless(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string): Promise<string> {
-		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
-		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation);
-		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
-		console.log("Inside sendNativeCurrencyGasless, signedUserOperation = ", signedUserOperation);
-		const res = await this.sendTransaction(externalProvider, signedUserOperation, options);
-		return res;
-	}
-
 	async sendNativeCurrencyERC20Gas(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string, pimlicoApiKey?: string): Promise<boolean> {
 		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
 		const sponsoredUserOperation = await this.getPaymasterSponsorshipERC20(externalProvider, options.chainId, userOperation, pimlicoApiKey, options);
@@ -290,68 +258,6 @@ export class SmartWallet extends Base {
 		// console.log("Inside sendNativeCurrencyERC20Gas, signedUserOperation = ", signedUserOperation);
 		// return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
 		return true;
-	}
-
-	//TODO - Take token number as a string because it cannot handle big numbers
-	async sendTokens(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<string> {
-		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
-		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);
-		const userOperation = await this.prepareTransaction(externalProvider, tokenAddress, 0, options, data);
-		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-		console.log("Inside sendTokens, signedUserOperation = ", signedUserOperation);
-		return this.sendTransaction(externalProvider, signedUserOperation, options);
-	}
-
-	// async sendNativeCurrencyBatch(externalProvider: Web3Provider, to: string[], value: number[], options?: WalletStruct): Promise<string> {
-	// 	if (to.length !== value.length) {
-	// 		throw new Error("to and value arrays must be of the same length");
-	// 	}
-
-	// 	const userOperation = await this.prepareBatchTransaction(externalProvider, to, [], options);
-	// }
-
-	// async sendTokensBatch(externalProvider: Web3Provider, to: string[], numberTokensinWei: number[], tokenAddress: string[], options?: WalletStruct): Promise<string> {
-	// 	if (to.length !== tokenAddress.length || to.length !== numberTokensinWei.length || tokenAddress.length !== numberTokensinWei.length) {
-	// 		throw new Error("to and value arrays must be of the same length");
-	// 	}
-
-	// 	const erc20Tokens = tokenAddress.map((tokenAddress) => ERC20__factory.connect(tokenAddress, externalProvider));
-	// 	const data = erc20Tokens.map((erc20Token, index) => erc20Token.interface.encodeFunctionData("transfer", [to[index], numberTokensinWei[index]]));
-
-	// 	const userOperation = await this.prepareBatchTransaction(externalProvider, tokenAddress, data, options);
-	// 	const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-	// 	console.log("Inside sendTokensBatch, signedUserOperation = ", signedUserOperation);
-	// 	return this.sendTransaction(externalProvider, signedUserOperation, options);
-	// }
-
-	async sendTokensGasless(externalProvider: Web3Provider, to: string, numberTokensinWei: number, tokenAddress: string, options?: WalletStruct): Promise<string> {
-		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
-		const data = erc20Token.interface.encodeFunctionData("transfer", [to, numberTokensinWei]);
-		const userOperation = await this.prepareTransaction(externalProvider, tokenAddress, 0, options, data);
-		const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation);
-		const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
-		console.log("Inside sendTokensGasless, signedUserOperation = ", signedUserOperation);
-
-		return this.sendTransaction(externalProvider, signedUserOperation, options);
-	}
-
-	async getNativeCurrencyBalance(externalProvider, options?: WalletStruct): Promise<number> {
-		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		const balance = await externalProvider.getBalance(smartAccountAddress);
-		const formatted_balance = Math.floor(parseFloat(utils.formatEther(balance)) * 100000) / 100000;
-		console.log("Inside getNativeCurrencyBalance | Native currency balance: ", formatted_balance);
-
-		return formatted_balance;
-	}
-
-	async getERC20TokenBalance(externalProvider: Web3Provider, tokenAddress: string, options?: WalletStruct): Promise<number> {
-		const erc20Token = ERC20__factory.connect(tokenAddress, externalProvider);
-		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		const balance = await erc20Token.balanceOf(smartAccountAddress);
-		const formatted_balance = Math.floor(parseFloat(utils.formatEther(balance)) * 100) / 100;
-		console.log("Inside getERC20TokenBalance | ERC20 token balance: ", formatted_balance);
-
-		return formatted_balance;
 	}
 
 	async getERC20TokenBalanceBatch(externalProvider: Web3Provider, tokenAddresses: string[], options?: WalletStruct): Promise<number[]> {
@@ -369,14 +275,6 @@ export class SmartWallet extends Base {
 		return formatted_balances;
 	}
 
-	async isSmartAccountDeployed(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
-		const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-		const contractCode = await externalProvider.getCode(smartAccountAddress);
-		console.log("Inside isSmartAccountDeployed | Smart account code: ", contractCode);
-
-		return contractCode !== "0x";
-	}
-
 	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number): Promise<Object> {
 		try {
 			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`);
@@ -389,32 +287,5 @@ export class SmartWallet extends Base {
 			return e.message;
 		}
 	}
-
-	// async getEntryPointDeposit(externalProvider: Web3Provider, options?: WalletStruct): Promise<number> {
-	// 	const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
-	// 	const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-	// 	const kernelAccount = Kernel__factory.connect(smartAccountAddress, signer);
-	// 	const deposit = await kernelAccount.getDeposit();
-	// 	// Convert deposit to ETH
-	// 	const formatted_deposit = Math.floor(parseFloat(utils.formatEther(deposit)) * 100000000000) / 100000000000;
-	// 	console.log("Inside getEntryPointDeposit | Deposit: ", formatted_deposit);
-
-	// 	return formatted_deposit;
-	// }
-
-	//TODO - Add functionality to withdraw deposit from the entry point directly without having to go through the smart account
-	// async withdrawDepositFromEntryPoint(externalProvider: Web3Provider, options?: WalletStruct): Promise<boolean> {
-	// 	const { signer, entryPoint } = await this.initParams(externalProvider, options);
-	// 	const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-	// 	const kernelAccount = Kernel__factory.connect(smartAccountAddress, signer);
-	// 	const deposit = await kernelAccount.getDeposit();
-	// 	console.log("Inside withdrawDepositFromEntryPoint | Deposit: ", deposit.toNumber());
-
-	// 	const withdrawTx = await kernelAccount.withdrawDepositTo(smartAccountAddress, deposit.toNumber() / 5);
-	// 	await withdrawTx.wait();
-
-	// 	console.log("Inside withdrawDepositFromEntryPoint | Withdraw transaction hash: ", withdrawTx.hash);
-	// 	return true;
-	// }
 }
 
