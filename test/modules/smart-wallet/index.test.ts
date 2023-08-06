@@ -1,6 +1,6 @@
 import { ethers, Contract } from "ethers";
 import { SmartWallet } from "../../../src/modules/smart-wallet";
-import { BastionSigner } from "../../../src/modules/bastion-signer";
+import { BastionSigner } from "../../../src/modules/bastionConnect";
 import { describe, beforeEach, it, expect } from "@jest/globals";
 import { skip } from "node:test";
 

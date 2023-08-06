@@ -4,10 +4,8 @@ import { SimpleAccountFactory__factory, EntryPoint__factory, SimpleAccount__fact
 import { ECDSAKernelFactory__factory } from "../modules/smart-wallet/contracts";
 import { Wallet, constants, utils, ethers, Signer, BigNumber } from "ethers";
 import { SmartWallet } from "../modules/smart-wallet";
-import { BastionSigner } from "../modules/bastion-signer";
 import { TransactionReceipt } from "@ethersproject/abstract-provider";
 import axios from "axios";
-// import { Signer } from "@ethersproject/abstract-signer";
 
 let options: BastionSignerOptions;
 let entryPoint: EntryPoint;
@@ -68,7 +66,6 @@ export async function createTransactionResponse(userOp1: UserOperationStruct): P
 
 export async function transactionRouting(provider: Web3Provider, transaction: Deferrable<TransactionRequest>, options?: BastionSignerOptions): Promise<TransactionResponse> {
 	await initParams(provider, options);
-	console.log("Inside transactionRouting, transaction = ", transaction);
 	if (!transaction.value) {
 		transaction.value = 0;
 	}
@@ -82,7 +79,7 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 	const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
 	console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
 	const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-	console.log("Inside transactionRouting, final User Operation Hash = ", res);
+	console.log("User Operation Hash = ", res);
 
 	return await createTransactionResponse(userOperation);
 }

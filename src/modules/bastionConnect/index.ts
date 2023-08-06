@@ -3,7 +3,6 @@ import { Provider, Web3Provider, TransactionRequest, TransactionResponse } from 
 import { Wallet, constants, utils, ethers, Signer } from "ethers";
 import { SmartWallet } from "../smart-wallet";
 import { transactionRouting } from "../../helpers/signerHelper";
-// import { Signer } from "@ethersproject/abstract-signer";
 
 export interface BastionSignerOptions {
 	privateKey: string;
@@ -12,7 +11,7 @@ export interface BastionSignerOptions {
 	gasToken?: string;
 }
 
-export class BastionSigner extends Signer {
+export class BastionConnect extends Signer {
 	signer: Signer;
 	address: string;
 	provider: Web3Provider;
@@ -41,9 +40,9 @@ export class BastionSigner extends Signer {
 	}
 
 	async getAddress(): Promise<string> {
-		const address = await this.smartWallet.getSmartAccountAddress(this.provider, this.options);
-		console.log("Inside getAddress = ", address);
-		return address;
+		// const { smartAccountAddress } = await this.smartWallet.getSmartAccountAddress(this.provider, this.options);
+		// return smartAccountAddress;
+		return this.signer.getAddress();
 	}
 
 	async signMessage(message: string | ethers.utils.Bytes): Promise<string> {
@@ -59,8 +58,6 @@ export class BastionSigner extends Signer {
 	}
 
 	async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
-		console.log("Inside sendTransaction = ", transaction);
-
 		return transactionRouting(this.provider, transaction, this.options);
 	}
 
