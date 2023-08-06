@@ -3,8 +3,6 @@ import { SampleOptions, SampleResponse, WalletStruct } from "./types";
 import { SimpleAccountFactory__factory, EntryPoint__factory, SimpleAccount__factory, EntryPoint, UserOperationStruct } from "@account-abstraction/contracts";
 import { Provider, StaticJsonRpcProvider, Web3Provider } from "@ethersproject/providers";
 import { Wallet, constants, utils, ethers } from "ethers";
-import { ERC20, ERC20__factory } from "@pimlico/erc20-paymaster/contracts";
-import { getERC20Paymaster } from "@pimlico/erc20-paymaster";
 import { BaseContract, BigNumber, BigNumberish, BytesLike, CallOverrides, ContractTransaction, Overrides, PayableOverrides, PopulatedTransaction, Signer } from "ethers";
 import { getChainName } from "../../helper";
 import axios from "axios";
@@ -165,64 +163,64 @@ export class SmartWallet extends Base {
 		}
 	}
 
-	async getPaymasterSponsorshipERC20(externalProvider: Web3Provider, chainId: number, userOperation, pimlicoApiKey: string, options?: WalletStruct): Promise<UserOperationStruct> {
-		const { signer, entryPoint } = await this.initParams(externalProvider, options);
+	// async getPaymasterSponsorshipERC20(externalProvider: Web3Provider, chainId: number, userOperation, pimlicoApiKey: string, options?: WalletStruct): Promise<UserOperationStruct> {
+	// 	const { signer, entryPoint } = await this.initParams(externalProvider, options);
 
-		const erc20Paymaster = await getERC20Paymaster(externalProvider, "USDC");
-		const erc20PaymasterAddress = erc20Paymaster.contract.address;
-		const usdcTokenAddress = await erc20Paymaster.contract.token();
-		const usdcToken = ERC20__factory.connect(usdcTokenAddress, signer);
-		const kernelAccount = Kernel__factory.connect(erc20PaymasterAddress, externalProvider);
+	// 	const erc20Paymaster = await getERC20Paymaster(externalProvider, "USDC");
+	// 	const erc20PaymasterAddress = erc20Paymaster.contract.address;
+	// 	const usdcTokenAddress = await erc20Paymaster.contract.token();
+	// 	const usdcToken = ERC20__factory.connect(usdcTokenAddress, signer);
+	// 	const kernelAccount = Kernel__factory.connect(erc20PaymasterAddress, externalProvider);
 
-		console.log("Inside getPaymasterSponsorshipERC20 | userOperation: ", userOperation);
-		const originalCallData = userOperation.callData;
+	// 	console.log("Inside getPaymasterSponsorshipERC20 | userOperation: ", userOperation);
+	// 	const originalCallData = userOperation.callData;
 
-		// Check if userOperation is a promise
-		if (userOperation && typeof userOperation === "object" && typeof userOperation.then === "function") {
-			console.log("Useropration is a promise");
-		} else {
-			console.log("Useropration is NOT a promise");
-		}
+	// 	// Check if userOperation is a promise
+	// 	if (userOperation && typeof userOperation === "object" && typeof userOperation.then === "function") {
+	// 		console.log("Useropration is a promise");
+	// 	} else {
+	// 		console.log("Useropration is NOT a promise");
+	// 	}
 
-		try {
-			//@ts-ignore
-			await erc20Paymaster.verifyTokenApproval(userOperation);
-		} catch (e) {
-			console.log("Inside getPaymasterSponsorshipERC20 | Error from verifyTokenApproval: ", e);
-			// @ts-ignore
-			const tokenAmount = await erc20Paymaster.calculateTokenAmount(userOperation);
-			console.log("Inside getPaymasterSponsorshipERC20 | tokenAmount: ", tokenAmount.toNumber());
+	// 	try {
+	// 		//@ts-ignore
+	// 		await erc20Paymaster.verifyTokenApproval(userOperation);
+	// 	} catch (e) {
+	// 		console.log("Inside getPaymasterSponsorshipERC20 | Error from verifyTokenApproval: ", e);
+	// 		// @ts-ignore
+	// 		const tokenAmount = await erc20Paymaster.calculateTokenAmount(userOperation);
+	// 		console.log("Inside getPaymasterSponsorshipERC20 | tokenAmount: ", tokenAmount.toNumber());
 
-			// Note - We need to approve the paymaster to spend the USDC for gas
-			const approveData = usdcToken.interface.encodeFunctionData("approve", [erc20PaymasterAddress, 10 * tokenAmount.toNumber()]);
+	// 		// Note - We need to approve the paymaster to spend the USDC for gas
+	// 		const approveData = usdcToken.interface.encodeFunctionData("approve", [erc20PaymasterAddress, 10 * tokenAmount.toNumber()]);
 
-			// GENERATE THE CALLDATA TO APPROVE THE USDC
-			const to = usdcToken.address;
-			const value = 0;
-			const data = approveData;
+	// 		// GENERATE THE CALLDATA TO APPROVE THE USDC
+	// 		const to = usdcToken.address;
+	// 		const value = 0;
+	// 		const data = approveData;
 
-			const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, "1"]);
-			userOperation.callData = callData;
+	// 		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, "1"]);
+	// 		userOperation.callData = callData;
 
-			const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
-			console.log("Inside getPaymasterSponsorshipERC20 | ApproveUserOperation: ", signedUserOperation);
-			await this.sendTransaction(externalProvider, signedUserOperation, options);
-		}
+	// 		const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
+	// 		console.log("Inside getPaymasterSponsorshipERC20 | ApproveUserOperation: ", signedUserOperation);
+	// 		await this.sendTransaction(externalProvider, signedUserOperation, options);
+	// 	}
 
-		console.log("Inside getPaymasterSponsorshipERC20 | Enough tokens have been approved, sending the TXN now...");
-		userOperation.callData = originalCallData;
-		const nonce = await entryPoint.getNonce(userOperation.sender, 0);
-		userOperation.nonce = utils.hexlify(nonce);
+	// 	console.log("Inside getPaymasterSponsorshipERC20 | Enough tokens have been approved, sending the TXN now...");
+	// 	userOperation.callData = originalCallData;
+	// 	const nonce = await entryPoint.getNonce(userOperation.sender, 0);
+	// 	userOperation.nonce = utils.hexlify(nonce);
 
-		const erc20PaymasterAndData = await erc20Paymaster.generatePaymasterAndData(userOperation);
-		userOperation.paymasterAndData = erc20PaymasterAndData;
-		console.log("Inside getPaymasterSponsorshipERC20 | Sponsored user operation: ", userOperation);
-		const signedUserOperation2 = await this.signUserOperation(externalProvider, userOperation, options);
-		console.log("Inside getPaymasterSponsorshipERC20 | originalUserOperation: ", signedUserOperation2);
-		await this.sendTransaction(externalProvider, signedUserOperation2, options);
+	// 	const erc20PaymasterAndData = await erc20Paymaster.generatePaymasterAndData(userOperation);
+	// 	userOperation.paymasterAndData = erc20PaymasterAndData;
+	// 	console.log("Inside getPaymasterSponsorshipERC20 | Sponsored user operation: ", userOperation);
+	// 	const signedUserOperation2 = await this.signUserOperation(externalProvider, userOperation, options);
+	// 	console.log("Inside getPaymasterSponsorshipERC20 | originalUserOperation: ", signedUserOperation2);
+	// 	await this.sendTransaction(externalProvider, signedUserOperation2, options);
 
-		return userOperation;
-	}
+	// 	return userOperation;
+	// }
 
 	async sendTransaction(externalProvider: Web3Provider, userOperation: UserOperationStruct, options?: WalletStruct): Promise<string> {
 		//First find the native currency balance for the smartAccount
@@ -248,29 +246,29 @@ export class SmartWallet extends Base {
 		}
 	}
 
-	async sendNativeCurrencyERC20Gas(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string, pimlicoApiKey?: string): Promise<boolean> {
-		const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
-		const sponsoredUserOperation = await this.getPaymasterSponsorshipERC20(externalProvider, options.chainId, userOperation, pimlicoApiKey, options);
-		// const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
-		// console.log("Inside sendNativeCurrencyERC20Gas, signedUserOperation = ", signedUserOperation);
-		// return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
-		return true;
-	}
+	// async sendNativeCurrencyERC20Gas(externalProvider: Web3Provider, to: string, value: number, options?: WalletStruct, data?: string, pimlicoApiKey?: string): Promise<boolean> {
+	// 	const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
+	// 	const sponsoredUserOperation = await this.getPaymasterSponsorshipERC20(externalProvider, options.chainId, userOperation, pimlicoApiKey, options);
+	// 	// const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
+	// 	// console.log("Inside sendNativeCurrencyERC20Gas, signedUserOperation = ", signedUserOperation);
+	// 	// return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
+	// 	return true;
+	// }
 
-	async getERC20TokenBalanceBatch(externalProvider: Web3Provider, tokenAddresses: string[], options?: WalletStruct): Promise<number[]> {
-		if (tokenAddresses.length > 100) {
-			throw new Error("Can return maximum 100 balances at a time");
-		}
+	// async getERC20TokenBalanceBatch(externalProvider: Web3Provider, tokenAddresses: string[], options?: WalletStruct): Promise<number[]> {
+	// 	if (tokenAddresses.length > 100) {
+	// 		throw new Error("Can return maximum 100 balances at a time");
+	// 	}
 
-		const { smartAccountAddress } = await this.getSmartAccountAddress(externalProvider, options);
-		const erc20Tokens = tokenAddresses.map((tokenAddress) => ERC20__factory.connect(tokenAddress, externalProvider));
-		const balancePromises = erc20Tokens.map((erc20Token) => erc20Token.balanceOf(smartAccountAddress));
-		const balances = await Promise.all(balancePromises);
-		const formatted_balances = balances.map((balance) => Math.floor(parseFloat(utils.formatEther(balance)) * 100) / 100);
-		console.log("Inside getERC20TokenBalanceBatch | ERC20 token balances: ", formatted_balances);
+	// 	const { smartAccountAddress } = await this.getSmartAccountAddress(externalProvider, options);
+	// 	const erc20Tokens = tokenAddresses.map((tokenAddress) => ERC20__factory.connect(tokenAddress, externalProvider));
+	// 	const balancePromises = erc20Tokens.map((erc20Token) => erc20Token.balanceOf(smartAccountAddress));
+	// 	const balances = await Promise.all(balancePromises);
+	// 	const formatted_balances = balances.map((balance) => Math.floor(parseFloat(utils.formatEther(balance)) * 100) / 100);
+	// 	console.log("Inside getERC20TokenBalanceBatch | ERC20 token balances: ", formatted_balances);
 
-		return formatted_balances;
-	}
+	// 	return formatted_balances;
+	// }
 
 	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number): Promise<Object> {
 		try {

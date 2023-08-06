@@ -32,9 +32,8 @@
 	},
 	"dependencies": {
 		"@account-abstraction/contracts": "^0.6.0",
-		"@pimlico/erc20-paymaster": "^0.0.12",
+		"@ethersproject/providers": "^5.7.2",
 		"axios": "^1.4.0",
 		"ethers": "^5.7.2"
 	}
 }
-

@@ -14,7 +14,7 @@ export interface BastionSignerOptions {
 export class BastionConnect extends Signer {
 	signer: Signer;
 	address: string;
-	provider: Web3Provider;
+	externalProvider: Web3Provider;
 	options: BastionSignerOptions;
 	smartWallet: SmartWallet;
 
@@ -28,7 +28,7 @@ export class BastionConnect extends Signer {
 			baseUrl: "testBaseUrl",
 		};
 		this.smartWallet = new SmartWallet(config);
-		this.provider = externalProvider;
+		this.externalProvider = externalProvider;
 		this.options = options;
 
 		try {
@@ -58,7 +58,7 @@ export class BastionConnect extends Signer {
 	}
 
 	async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
-		return transactionRouting(this.provider, transaction, this.options);
+		return transactionRouting(this.externalProvider, transaction, this.options);
 	}
 
 	async signTransaction(transaction: Deferrable<ethers.providers.TransactionRequest>): Promise<string> {
