@@ -16,18 +16,18 @@ export class BastionConnect extends Signer {
 	address: string;
 	externalProvider: Web3Provider;
 	options: BastionSignerOptions;
-	smartWallet: SmartWallet;
+	smartWalletInstance: SmartWallet;
 
-	constructor() {
-		super();
-	}
+	// constructor() {
+	// 	super();
+	// }
 
 	async init(externalProvider: Web3Provider, options?: BastionSignerOptions) {
 		const config = {
 			apiKey: "testApiKey",
 			baseUrl: "testBaseUrl",
 		};
-		this.smartWallet = new SmartWallet(config);
+		this.smartWalletInstance = new SmartWallet(config);
 		this.externalProvider = externalProvider;
 		this.options = options;
 

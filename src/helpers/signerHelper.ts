@@ -6,18 +6,13 @@ import { Wallet, constants, utils, ethers, Signer, BigNumber } from "ethers";
 import { SmartWallet } from "../modules/smart-wallet";
 import { TransactionReceipt } from "@ethersproject/abstract-provider";
 import axios from "axios";
+import { BastionSignerOptions } from "../modules/bastionConnect";
 
 let options: BastionSignerOptions;
 let entryPoint: EntryPoint;
 let smartWallet: SmartWallet;
 const BASE_API_URL = "http://localhost:3000";
 const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-
-interface BastionSignerOptions {
-	privateKey: string;
-	rpcUrl: string;
-	chainId: number;
-}
 
 async function initParams(provider: Web3Provider, options1?: BastionSignerOptions) {
 	options = options1;
@@ -73,13 +68,18 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 	if (!transaction.data) {
 		transaction.data = "0x";
 	}
-
 	const userOperation = await smartWallet.prepareTransaction(provider, transaction.to as string, transaction.value as number, options, transaction.data as string);
-	const sponsoredUserOperation = await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
-	const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
-	console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
-	const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-	console.log("User Operation Hash = ", res);
+	let sponsoredUserOperation;
+	if (options.gasToken) {
+		sponsoredUserOperation = await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken);
+	} else {
+		sponsoredUserOperation = await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
+	}
+
+	// const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
+	// console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
+	// const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
+	// console.log("User Operation Hash = ", res);
 
 	return await createTransactionResponse(userOperation);
 }
