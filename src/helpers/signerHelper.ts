@@ -76,10 +76,10 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 		sponsoredUserOperation = await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
 	}
 
-	// const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
-	// console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
-	// const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-	// console.log("User Operation Hash = ", res);
+	const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
+	console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
+	const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
+	console.log("User Operation Hash = ", res);
 
 	return await createTransactionResponse(userOperation);
 }

@@ -168,7 +168,7 @@ export class SmartWallet extends Base {
 
 	async getPaymasterSponsorshipERC20(chainId: number, userOperation: aaContracts.UserOperationStruct, erc20Token: string): Promise<aaContracts.UserOperationStruct> {
 		try {
-			console.log("========== Calling Pimlico Paymaster to sponsor gas ==========");
+			console.log("========== Calling Pimlico Paymaster to sponsor ERC20 gas ==========");
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/payment-sponsorship-erc20`, {
 				chainId: chainId,
 				userOperation: userOperation,
