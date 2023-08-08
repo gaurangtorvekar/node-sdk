@@ -78,8 +78,12 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 
 	const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
 	console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
-	const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-	console.log("User Operation Hash = ", res);
+	try {
+		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
+		console.log("User Operation Hash = ", res);
+	} catch (e) {
+		console.log("Error from send transaction");
+	}
 
 	return await createTransactionResponse(userOperation);
 }
