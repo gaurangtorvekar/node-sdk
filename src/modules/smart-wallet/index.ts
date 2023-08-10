@@ -153,22 +153,30 @@ export class SmartWallet extends Base {
 			if (erc20Token) payload["erc20Token"] = erc20Token;
 
 			const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload);
-			const updatedUserOperation = response?.data.data.paymasterDataResponse.userOperation;
+			const updatedUserOperation = response?.data?.data?.paymasterDataResponse?.userOperation;
 
 			console.log("Inside getSponsorship | Sponsored user operation: ", updatedUserOperation);
 			return updatedUserOperation;
 		} catch (e) {
-			console.log("Error from getSponsorship api call: ", e);
-			return e;
+			console.log("Error from getSponsorship api call: ", e.response.data);
+			throw e;
 		}
 	}
 
 	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct): Promise<aaContracts.UserOperationStruct> {
-		return await this.getSponsorship(chainId, userOperation, "/v1/transaction/payment-sponsorship");
+		try {
+			return await this.getSponsorship(chainId, userOperation, "/v1/transaction/payment-sponsorship");
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	async getPaymasterSponsorshipERC20(chainId: number, userOperation: aaContracts.UserOperationStruct, erc20Token: string): Promise<aaContracts.UserOperationStruct> {
-		return await this.getSponsorship(chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
+		try {
+			return await this.getSponsorship(chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	async sendTransaction(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<string> {
