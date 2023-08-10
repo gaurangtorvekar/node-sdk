@@ -61,32 +61,21 @@ export async function createTransactionResponse(userOp1: UserOperationStruct): P
 
 export async function transactionRouting(provider: Web3Provider, transaction: Deferrable<TransactionRequest>, options?: BastionSignerOptions): Promise<TransactionResponse> {
 	await initParams(provider, options);
-	if (!transaction.value) {
-		transaction.value = 0;
-	}
+	transaction.value = transaction.value || 0;
+	transaction.data = transaction.data || "0x";
 
-	if (!transaction.data) {
-		transaction.data = "0x";
-	}
 	const userOperation = await smartWallet.prepareTransaction(provider, transaction.to as string, transaction.value as number, options, transaction.data as string);
 
 	let signedUserOperation;
 
+	let userOpToSign = userOperation;
 	if (!options.noSponsorship) {
-		// First, check if the user WANTS sponsorship - this is the default
-		let sponsoredUserOperation;
-		if (options.gasToken) {
-			// User wants ERC20 sponsorship
-			sponsoredUserOperation = await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken);
-		} else {
-			// User wants native currency sponsorship
-			sponsoredUserOperation = await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
-		}
-		signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
-	} else {
-		// User doesn't want sponsorship
-		signedUserOperation = await smartWallet.signUserOperation(provider, userOperation, options);
+		userOpToSign = options.gasToken
+			? await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken)
+			: await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
 	}
+
+	signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
 
 	const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
 	console.log("User Operation Hash = ", res);
