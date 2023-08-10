@@ -79,7 +79,7 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 	const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
 	console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
 	let res: Object = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-	res = options.gasToken ? { ...res, paymaster, paymasterURL } : res;
+	res = { ...res, paymaster, paymasterURL };
 	console.log("Resonse of send transaction: ", res);
 	return await createTransactionResponse(userOperation);
 }
