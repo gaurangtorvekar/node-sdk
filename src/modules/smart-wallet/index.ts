@@ -189,8 +189,8 @@ export class SmartWallet extends Base {
 			const sendTransactionResponse = response?.data.data.sendTransactionResponse;
 			return sendTransactionResponse;
 		} catch (e) {
-			console.log("Error from sendTransaction api call: ", e);
-			return e;
+			console.log("Error from sendTransaction api call: ", e.response.data);
+			throw e;
 		}
 	}
 
