@@ -78,9 +78,14 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 	const { paymaster, paymasterURL, userOperation: sponsoredUserOperation} = paymasterDataResponse;
 	const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
 	console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
-	let res: Object = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-	res = { ...res, paymaster, paymasterURL };
-	console.log("Resonse of send transaction: ", res);
-	return await createTransactionResponse(userOperation);
+	try {
+		let res: any = await smartWallet.sendTransaction(provider, signedUserOperation, options);
+		console.log("Resonse of send transaction: ", res);
+		res = { ...res, paymaster, paymasterURL };
+		return await createTransactionResponse(userOperation);
+	} catch (error) {
+		console.log("error:transactionRouting", error.response.data );
+		throw `error::transactionRouting: ${error.response.data.message}`;
+	}
 }
 
