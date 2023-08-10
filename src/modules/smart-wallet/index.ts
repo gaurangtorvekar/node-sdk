@@ -1,12 +1,8 @@
 import { Base } from "../../base";
-import { SampleOptions, SampleResponse } from "./types";
-// import { SimpleAccountFactory__factory, EntryPoint__factory, SimpleAccount__factory, EntryPoint, UserOperationStruct } from "@account-abstraction/contracts";
 import * as aaContracts from "@account-abstraction/contracts";
-import { Provider, StaticJsonRpcProvider, Web3Provider } from "@ethersproject/providers";
-import * as ethersUtils from "ethers";
-import { Wallet, constants, ethers } from "ethers";
-import { BaseContract, BigNumber, BigNumberish, BytesLike, CallOverrides, ContractTransaction, Overrides, PayableOverrides, PopulatedTransaction, Signer } from "ethers";
-import { getChainName } from "../../helper";
+import { Web3Provider } from "@ethersproject/providers";
+// import * as ethersUtils from "ethers";
+import { Wallet, utils, BigNumber } from "ethers";
 import axios from "axios";
 import { ECDSAKernelFactory__factory, Kernel__factory } from "./contracts";
 import { BastionSignerOptions } from "../bastionConnect";
@@ -72,7 +68,7 @@ export class SmartWallet extends Base {
 		//TODO - make this customizable based on the type of transaction
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, 0]);
-		const initCode = ethersUtils.utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, 0])]);
+		const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, 0])]);
 		const gasPrice = await externalProvider.getGasPrice();
 
 		//Check if the smart account contract has been deployed
@@ -86,14 +82,14 @@ export class SmartWallet extends Base {
 		}
 		const userOperation = {
 			sender: smartAccountAddress,
-			nonce: ethersUtils.utils.hexlify(nonce),
+			nonce: utils.hexlify(nonce),
 			initCode: contractCode === "0x" ? initCode : "0x",
 			callData,
-			callGasLimit: ethersUtils.utils.hexlify(75_000),
-			verificationGasLimit: ethersUtils.utils.hexlify(100_000),
-			preVerificationGas: ethersUtils.utils.hexlify(45000),
-			maxFeePerGas: ethersUtils.utils.hexlify(gasPrice),
-			maxPriorityFeePerGas: ethersUtils.utils.hexlify(gasPrice),
+			callGasLimit: utils.hexlify(75_000),
+			verificationGasLimit: utils.hexlify(100_000),
+			preVerificationGas: utils.hexlify(45000),
+			maxFeePerGas: utils.hexlify(gasPrice),
+			maxPriorityFeePerGas: utils.hexlify(gasPrice),
 			paymasterAndData: "0x",
 			signature: "0x",
 		};
@@ -140,9 +136,9 @@ export class SmartWallet extends Base {
 	async signUserOperation(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
 
-		const signature = await signer.signMessage(ethersUtils.utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
+		const signature = await signer.signMessage(utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
 		const padding = "0x00000000";
-		const signatureWithPadding = ethersUtils.utils.hexConcat([padding, signature]);
+		const signatureWithPadding = utils.hexConcat([padding, signature]);
 		userOperation.signature = signatureWithPadding;
 
 		console.log("Inside signUserOperation | Signed user Operation: ", userOperation);
@@ -197,30 +193,6 @@ export class SmartWallet extends Base {
 			return e;
 		}
 	}
-
-	// async sendNativeCurrencyERC20Gas(externalProvider: Web3Provider, to: string, value: number, options?: BastionSignerOptions, data?: string, pimlicoApiKey?: string): Promise<boolean> {
-	// 	const userOperation = await this.prepareTransaction(externalProvider, to, value, options, data);
-	// 	const sponsoredUserOperation = await this.getPaymasterSponsorshipERC20(externalProvider, options.chainId, userOperation, pimlicoApiKey, options);
-	// 	// const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
-	// 	// console.log("Inside sendNativeCurrencyERC20Gas, signedUserOperation = ", signedUserOperation);
-	// 	// return this.sendTransaction(externalProvider, signedUserOperation, options, pimlicoApiKey);
-	// 	return true;
-	// }
-
-	// async getERC20TokenBalanceBatch(externalProvider: Web3Provider, tokenAddresses: string[], options?: BastionSignerOptions): Promise<number[]> {
-	// 	if (tokenAddresses.length > 100) {
-	// 		throw new Error("Can return maximum 100 balances at a time");
-	// 	}
-
-	// 	const { smartAccountAddress } = await this.getSmartAccountAddress(externalProvider, options);
-	// 	const erc20Tokens = tokenAddresses.map((tokenAddress) => ERC20__factory.connect(tokenAddress, externalProvider));
-	// 	const balancePromises = erc20Tokens.map((erc20Token) => erc20Token.balanceOf(smartAccountAddress));
-	// 	const balances = await Promise.all(balancePromises);
-	// 	const formatted_balances = balances.map((balance) => Math.floor(parseFloat(utils.formatEther(balance)) * 100) / 100);
-	// 	console.log("Inside getERC20TokenBalanceBatch | ERC20 token balances: ", formatted_balances);
-
-	// 	return formatted_balances;
-	// }
 
 	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number): Promise<Object> {
 		try {
