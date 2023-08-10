@@ -82,6 +82,7 @@ export class SmartWallet extends Base {
 			nonce = 0;
 		} else {
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
+			console.log("Nonce = ", nonce.toNumber());
 		}
 		const userOperation = {
 			sender: smartAccountAddress,

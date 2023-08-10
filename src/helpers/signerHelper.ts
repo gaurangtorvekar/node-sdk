@@ -69,17 +69,27 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 		transaction.data = "0x";
 	}
 	const userOperation = await smartWallet.prepareTransaction(provider, transaction.to as string, transaction.value as number, options, transaction.data as string);
-	let sponsoredUserOperation;
-	if (options.gasToken) {
-		sponsoredUserOperation = await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken);
+
+	let signedUserOperation;
+
+	if (!options.noSponsorship) {
+		// First, check if the user WANTS sponsorship - this is the default
+		let sponsoredUserOperation;
+		if (options.gasToken) {
+			// User wants ERC20 sponsorship
+			sponsoredUserOperation = await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken);
+		} else {
+			// User wants native currency sponsorship
+			sponsoredUserOperation = await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
+		}
+		signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
 	} else {
-		sponsoredUserOperation = await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
+		// User doesn't want sponsorship
+		signedUserOperation = await smartWallet.signUserOperation(provider, userOperation, options);
 	}
 
-	// const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
-	// console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
-	// const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-	// console.log("User Operation Hash = ", res);
+	const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
+	console.log("User Operation Hash = ", res);
 
 	return await createTransactionResponse(userOperation);
 }

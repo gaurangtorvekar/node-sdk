@@ -9,6 +9,7 @@ export interface BastionSignerOptions {
 	rpcUrl: string;
 	chainId: number;
 	gasToken?: string;
+	noSponsorship?: boolean;
 }
 
 export class BastionConnect extends Signer {

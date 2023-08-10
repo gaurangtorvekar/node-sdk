@@ -122,6 +122,23 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
+	it.skip("should mint an NFT with gas from Smart Account", async () => {
+		let bastionConnect = new BastionConnect();
+
+		DEFAULT_CONFIG.noSponsorship = true;
+		await bastionConnect.init(provider, DEFAULT_CONFIG);
+
+		//This contract is deployed on arb-goerli
+		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+		const contractABI = ["function safeMint(address to) public"];
+
+		const address = await bastionConnect.getAddress();
+		const nftContract = new Contract(contractAddress, contractABI, bastionConnect);
+
+		const res = await nftContract.safeMint(address);
+		expect(res.hash).toHaveLength(66);
+	}, 70000);
+
 	it("should mint an NFT with LINK ERC20 gas", async () => {
 		let bastionConnect = new BastionConnect();
 
