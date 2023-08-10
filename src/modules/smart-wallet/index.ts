@@ -150,39 +150,29 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
-	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct): Promise<aaContracts.UserOperationStruct> {
+	async getSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, endpoint: string, erc20Token?: string): Promise<aaContracts.UserOperationStruct> {
 		try {
 			console.log("========== Calling Pimlico Paymaster to sponsor gas ==========");
-			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/payment-sponsorship`, {
-				chainId: chainId,
-				userOperation: userOperation,
-			});
+			const payload = { chainId, userOperation };
+			if (erc20Token) payload["erc20Token"] = erc20Token;
 
-			const paymasterDataResponse = response?.data.data.paymasterDataResponse;
-			console.log("Inside getPaymasterSponsorship | Sponsored user operation: ", paymasterDataResponse);
-			return paymasterDataResponse;
+			const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload);
+			const updatedUserOperation = response?.data.data.paymasterDataResponse.userOperation;
+
+			console.log("Inside getSponsorship | Sponsored user operation: ", updatedUserOperation);
+			return updatedUserOperation;
 		} catch (e) {
-			console.log("Error from getPaymasterSponsorship api call: ", e);
+			console.log("Error from getSponsorship api call: ", e);
 			return e;
 		}
 	}
 
-	async getPaymasterSponsorshipERC20(chainId: number, userOperation: aaContracts.UserOperationStruct, erc20Token: string): Promise<aaContracts.UserOperationStruct> {
-		try {
-			console.log("========== Calling Pimlico Paymaster to sponsor gas ==========");
-			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/payment-sponsorship-erc20`, {
-				chainId: chainId,
-				userOperation: userOperation,
-				erc20Token: erc20Token,
-			});
+	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct): Promise<aaContracts.UserOperationStruct> {
+		return await this.getSponsorship(chainId, userOperation, "/v1/transaction/payment-sponsorship");
+	}
 
-			const paymasterDataResponse = response?.data.data.paymasterDataResponse;
-			console.log("Inside getPaymasterSponsorshipERC20 | Sponsored user operation: ", paymasterDataResponse);
-			return paymasterDataResponse;
-		} catch (e) {
-			console.log("Error from getPaymasterSponsorshipERC20 api call: ", e);
-			return e;
-		}
+	async getPaymasterSponsorshipERC20(chainId: number, userOperation: aaContracts.UserOperationStruct, erc20Token: string): Promise<aaContracts.UserOperationStruct> {
+		return await this.getSponsorship(chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
 	}
 
 	async sendTransaction(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<string> {
