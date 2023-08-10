@@ -69,18 +69,18 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 		transaction.data = "0x";
 	}
 	const userOperation = await smartWallet.prepareTransaction(provider, transaction.to as string, transaction.value as number, options, transaction.data as string);
-	let sponsoredUserOperation;
+	let paymasterDataResponse;
 	if (options.gasToken) {
-		sponsoredUserOperation = await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken);
+		paymasterDataResponse = await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken);
 	} else {
-		sponsoredUserOperation = await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
+		paymasterDataResponse = await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
 	}
-
+	const { paymaster, paymasterURL, userOperation: sponsoredUserOperation} = paymasterDataResponse;
 	const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
 	console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
-	const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-	console.log("User Operation Hash = ", res);
-
+	let res: Object = await smartWallet.sendTransaction(provider, signedUserOperation, options);
+	res = options.gasToken ? { ...res, paymaster, paymasterURL } : res;
+	console.log("Resonse of send transaction: ", res);
 	return await createTransactionResponse(userOperation);
 }
 
