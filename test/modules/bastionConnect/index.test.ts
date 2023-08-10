@@ -142,8 +142,10 @@ describe("setupSmartAccount", () => {
 	it("should mint an NFT with LINK ERC20 gas", async () => {
 		let bastionConnect = new BastionConnect();
 
-		//This is LINK tokens on arb-goerli
+		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
+		// Stackup Test ERC20 gas token  = 0x3870419Ba2BBf0127060bCB37f69A1b1C090992B
 		DEFAULT_CONFIG.gasToken = "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28";
+		// DEFAULT_CONFIG.gasToken = "0x3870419Ba2BBf0127060bCB37f69A1b1C090992B";
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
 		//This contract is deployed on arb-goerli

@@ -158,9 +158,9 @@ export class SmartWallet extends Base {
 				userOperation: userOperation,
 			});
 
-			const updatedUserOperation = response?.data.data.userOperation;
-			console.log("Inside getPaymasterSponsorship | Sponsored user operation: ", updatedUserOperation);
-			return updatedUserOperation;
+			const paymasterDataResponse = response?.data.data.paymasterDataResponse;
+			console.log("Inside getPaymasterSponsorship | Sponsored user operation: ", paymasterDataResponse);
+			return paymasterDataResponse;
 		} catch (e) {
 			console.log("Error from getPaymasterSponsorship api call: ", e);
 			return e;
@@ -176,9 +176,9 @@ export class SmartWallet extends Base {
 				erc20Token: erc20Token,
 			});
 
-			const updatedUserOperation = response?.data.data.userOperation;
-			console.log("Inside getPaymasterSponsorshipERC20 | Sponsored user operation: ", updatedUserOperation);
-			return updatedUserOperation;
+			const paymasterDataResponse = response?.data.data.paymasterDataResponse;
+			console.log("Inside getPaymasterSponsorshipERC20 | Sponsored user operation: ", paymasterDataResponse);
+			return paymasterDataResponse;
 		} catch (e) {
 			console.log("Error from getPaymasterSponsorshipERC20 api call: ", e);
 			return e;
@@ -195,14 +195,13 @@ export class SmartWallet extends Base {
 		}
 
 		try {
-			console.log("========== Sending transaction through Pimlico bundler ==========");
+			console.log("========== Sending transaction through bundler ==========");
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/send-transaction`, {
 				chainId: options.chainId,
 				userOperation: userOperation,
 			});
-
-			const userOpHash = response?.data.data.userOpHash;
-			return userOpHash;
+			const sendTransactionResponse = response?.data.data.sendTransactionResponse;
+			return sendTransactionResponse;
 		} catch (e) {
 			console.log("Error from sendTransaction api call: ", e);
 			return e;
