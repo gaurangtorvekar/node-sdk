@@ -61,27 +61,25 @@ export async function createTransactionResponse(userOp1: UserOperationStruct): P
 
 export async function transactionRouting(provider: Web3Provider, transaction: Deferrable<TransactionRequest>, options?: BastionSignerOptions): Promise<TransactionResponse> {
 	await initParams(provider, options);
-	if (!transaction.value) {
-		transaction.value = 0;
+	transaction.value = transaction.value || 0;
+	transaction.data = transaction.data || "0x";
+
+	const userOperation = await smartWallet.prepareTransaction(provider, transaction.to as string, transaction.value as number, options, transaction.data as string);
+
+	let signedUserOperation;
+
+	let userOpToSign = userOperation;
+	if (!options.noSponsorship) {
+		userOpToSign = options.gasToken
+			? await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken)
+			: await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
 	}
 
-	if (!transaction.data) {
-		transaction.data = "0x";
-	}
-	const userOperation = await smartWallet.prepareTransaction(provider, transaction.to as string, transaction.value as number, options, transaction.data as string);
-	let paymasterDataResponse;
-	if (options.gasToken) {
-		paymasterDataResponse = await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken);
-	} else {
-		paymasterDataResponse = await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
-	}
-	const { paymaster, paymasterURL, userOperation: sponsoredUserOperation} = paymasterDataResponse;
-	const signedUserOperation = await smartWallet.signUserOperation(provider, sponsoredUserOperation, options);
-	console.log("Inside transactionRouting, signedUserOperation = ", signedUserOperation);
+	signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
+
 	try {
-		let res: any = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-		console.log("Resonse of send transaction: ", res);
-		res = { ...res, paymaster, paymasterURL };
+		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
+		console.log("Resonse of send transaction:  ", res);
 		return await createTransactionResponse(userOperation);
 	} catch (error) {
 		console.log("error:transactionRouting", error.response.data );

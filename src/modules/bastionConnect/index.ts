@@ -9,6 +9,7 @@ export interface BastionSignerOptions {
 	rpcUrl: string;
 	chainId: number;
 	gasToken?: string;
+	noSponsorship?: boolean;
 }
 
 export class BastionConnect extends Signer {
@@ -17,10 +18,6 @@ export class BastionConnect extends Signer {
 	externalProvider: Web3Provider;
 	options: BastionSignerOptions;
 	smartWalletInstance: SmartWallet;
-
-	// constructor() {
-	// 	super();
-	// }
 
 	async init(externalProvider: Web3Provider, options?: BastionSignerOptions) {
 		const config = {
@@ -40,9 +37,8 @@ export class BastionConnect extends Signer {
 	}
 
 	async getAddress(): Promise<string> {
-		// const { smartAccountAddress } = await this.smartWallet.getSmartAccountAddress(this.provider, this.options);
-		// return smartAccountAddress;
-		return this.signer.getAddress();
+		const { smartAccountAddress } = await this.smartWalletInstance.getSmartAccountAddress(this.externalProvider, this.options);
+		return smartAccountAddress;
 	}
 
 	async signMessage(message: string | ethers.utils.Bytes): Promise<string> {
