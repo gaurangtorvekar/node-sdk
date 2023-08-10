@@ -70,9 +70,14 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 
 	let userOpToSign = userOperation;
 	if (!options.noSponsorship) {
-		userOpToSign = options.gasToken
+		try {
+			userOpToSign = options.gasToken
 			? await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken)
 			: await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
+		} catch (error) {
+			throw `error::transactionRouting: ${error.response.data.message}`
+		}	
+		
 	}
 
 	signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
