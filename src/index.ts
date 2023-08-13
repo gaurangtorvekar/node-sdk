@@ -1,7 +1,7 @@
 // import { SmartWallet } from "./modules/smart-wallet";
 import { BastionConnect } from "./modules/bastionConnect";
 
-export default class Bastion {
+export class Bastion {
 	// smartWallet: SmartWallet;
 	bastionConnect: BastionConnect;
 
