@@ -72,12 +72,11 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 	if (!options.noSponsorship) {
 		try {
 			userOpToSign = options.gasToken
-			? await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken)
-			: await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
+				? await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken)
+				: await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
 		} catch (error) {
-			throw `error::transactionRouting: ${error.response.data.message}`
-		}	
-		
+			throw `error::transactionRouting: ${error.response.data.message}`;
+		}
 	}
 
 	signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
@@ -87,7 +86,7 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 		console.log("Resonse of send transaction:  ", res);
 		return await createTransactionResponse(userOperation);
 	} catch (error) {
-		console.log("error:transactionRouting", error.response.data );
+		console.log("error:transactionRouting", error.response.data);
 		throw `error::transactionRouting: ${error.response.data.message}`;
 	}
 }

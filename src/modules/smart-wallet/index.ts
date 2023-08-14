@@ -18,6 +18,7 @@ export class SmartWallet extends Base {
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
+	SMART_ACCOUNT_SALT = 4;
 
 	init(): Promise<void> {
 		//execute initialization steps
@@ -42,7 +43,7 @@ export class SmartWallet extends Base {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const signerAddress = await signer.getAddress();
-		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, 0);
+		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SMART_ACCOUNT_SALT);
 		console.log("Using Smart Wallet:", smartAccountAddress);
 		return { smartAccountAddress, signerAddress };
 	}
@@ -51,7 +52,7 @@ export class SmartWallet extends Base {
 	async initSmartAccount(externalProvider: Web3Provider, options?: BastionSignerOptions): Promise<boolean> {
 		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
 
-		const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), 0, {
+		const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), this.SMART_ACCOUNT_SALT, {
 			gasLimit: 300000,
 		});
 		await createTx.wait();
@@ -68,7 +69,8 @@ export class SmartWallet extends Base {
 		//TODO - make this customizable based on the type of transaction
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, 0]);
-		const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, 0])]);
+		const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
+		console.log("Inside prepareTransaction | initCode: ", initCode);
 		const gasPrice = await externalProvider.getGasPrice();
 
 		//Check if the smart account contract has been deployed
@@ -85,9 +87,9 @@ export class SmartWallet extends Base {
 			nonce: utils.hexlify(nonce),
 			initCode: contractCode === "0x" ? initCode : "0x",
 			callData,
-			callGasLimit: utils.hexlify(75_000),
-			verificationGasLimit: utils.hexlify(100_000),
-			preVerificationGas: utils.hexlify(45000),
+			callGasLimit: utils.hexlify(150_000),
+			verificationGasLimit: utils.hexlify(500_000),
+			preVerificationGas: utils.hexlify(100_000),
 			maxFeePerGas: utils.hexlify(gasPrice),
 			maxPriorityFeePerGas: utils.hexlify(gasPrice),
 			paymasterAndData: "0x",
@@ -179,20 +181,47 @@ export class SmartWallet extends Base {
 		}
 	}
 
-	async sendTransaction(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<string> {
-		//First find the native currency balance for the smartAccount
-		const { smartAccountAddress } = await this.getSmartAccountAddress(externalProvider, options);
-		const eth_balance = await externalProvider.getBalance(smartAccountAddress);
+	// TODO - Instead of this, do a sponsored initSmartAccount transaction
+	// Doing this because we need to prefund the Entry Point with some ETH for this Smart Account
+	private async checkEntryPointDeposit(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
+		let modifiedUserOp = userOperation;
+		if (userOperation.initCode !== "0x") {
+			// First remove the paymaster sponsorhip
+			modifiedUserOp.paymasterAndData = "0x";
 
-		if (eth_balance < BigNumber.from(10)) {
-			throw new Error("Insufficient balance in smart account");
+			// Secondly, send deposit to the Entry point for this smart account through the signer
+			const { signer, entryPoint } = await this.initParams(externalProvider, options);
+			const { signerAddress, smartAccountAddress } = await this.getSmartAccountAddress(externalProvider, options);
+			console.log("Inside sendTransaction, checking Entry point deposit now ======= ");
+			const deposit = await entryPoint.balanceOf(smartAccountAddress);
+
+			if (deposit.isZero()) {
+				// First check if the signer has enough balance to deposit
+				const signerBalance = await signer.getBalance();
+				if (signerBalance.lt(utils.parseEther("0.01"))) {
+					throw new Error("Insufficient balance in signer account for Entry Point deposit");
+				}
+
+				console.log("Inside sendTransaction, depositing now ======= ");
+				const depositTxn = await entryPoint.depositTo(smartAccountAddress, {
+					value: utils.parseEther("0.01"),
+					gasLimit: 300000,
+				});
+				await depositTxn.wait();
+				console.log("Deposited 0.01 ETH to smart account", depositTxn.hash);
+			}
 		}
 
+		return modifiedUserOp;
+	}
+
+	async sendTransaction(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<string> {
+		const modifiedUserOp = await this.checkEntryPointDeposit(externalProvider, userOperation, options);
 		try {
 			console.log("========== Sending transaction through bundler ==========");
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/send-transaction`, {
 				chainId: options.chainId,
-				userOperation: userOperation,
+				userOperation: modifiedUserOp,
 			});
 			const sendTransactionResponse = response?.data.data.sendTransactionResponse;
 			return sendTransactionResponse;
