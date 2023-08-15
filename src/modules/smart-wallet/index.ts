@@ -102,8 +102,8 @@ export class SmartWallet extends Base {
 		//TODO - make this customizable based on the type of transaction
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, 0]);
-		let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
-		console.log("Inside prepareTransaction | initCode: ", initCode);
+		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
+		// console.log("Inside prepareTransaction | initCode: ", initCode);
 		const gasPrice = await externalProvider.getGasPrice();
 
 		//Check if the smart account contract has been deployed
@@ -112,7 +112,7 @@ export class SmartWallet extends Base {
 		if (contractCode === "0x") {
 			nonce = 0;
 			await this.initSmartAccount(externalProvider, options);
-			initCode = "0x";
+			// initCode = "0x";
 		} else {
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 			console.log("Nonce = ", nonce.toNumber());
@@ -120,7 +120,7 @@ export class SmartWallet extends Base {
 		const userOperation = {
 			sender: smartAccountAddress,
 			nonce: utils.hexlify(nonce),
-			initCode: contractCode === "0x" ? initCode : "0x",
+			initCode: "0x",
 			callData,
 			callGasLimit: utils.hexlify(150_000),
 			verificationGasLimit: utils.hexlify(500_000),
