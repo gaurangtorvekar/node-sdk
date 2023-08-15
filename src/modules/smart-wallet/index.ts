@@ -18,7 +18,7 @@ export class SmartWallet extends Base {
 	BATCH_ACTIONS_EXECUTOR = "0xF3F98574AC89220B5ae422306dC38b947901b421";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
-	SMART_ACCOUNT_SALT = 5;
+	SMART_ACCOUNT_SALT = 1;
 
 	init(): Promise<void> {
 		//execute initialization steps
@@ -142,8 +142,8 @@ export class SmartWallet extends Base {
 		//TODO - make this customizable based on the type of transaction
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = batchActions.interface.encodeFunctionData("executeBatch", [to, value, data, 0]);
-		let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
-		console.log("Inside prepareTransaction | initCode: ", initCode);
+		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
+		// console.log("Inside prepareTransaction | initCode: ", initCode);
 		const gasPrice = await externalProvider.getGasPrice();
 
 		//Check if the smart account contract has been deployed
@@ -152,7 +152,7 @@ export class SmartWallet extends Base {
 		if (contractCode === "0x") {
 			nonce = 0;
 			await this.initSmartAccount(externalProvider, options);
-			initCode = "0x";
+			// initCode = "0x";
 		} else {
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 			console.log("Nonce = ", nonce.toNumber());
@@ -160,7 +160,7 @@ export class SmartWallet extends Base {
 		const userOperation = {
 			sender: smartAccountAddress,
 			nonce: utils.hexlify(nonce),
-			initCode: contractCode === "0x" ? initCode : "0x",
+			initCode: "0x",
 			callData,
 			callGasLimit: utils.hexlify(150_000),
 			verificationGasLimit: utils.hexlify(500_000),
@@ -220,42 +220,7 @@ export class SmartWallet extends Base {
 		}
 	}
 
-	// TODO - Instead of this, do a sponsored initSmartAccount transaction
-	// Doing this because we need to prefund the Entry Point with some ETH for this Smart Account
-	private async checkEntryPointDeposit(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
-		let modifiedUserOp = userOperation;
-		if (userOperation.initCode !== "0x") {
-			// First remove the paymaster sponsorhip
-			modifiedUserOp.paymasterAndData = "0x";
-
-			// Secondly, send deposit to the Entry point for this smart account through the signer
-			const { signer, entryPoint } = await this.initParams(externalProvider, options);
-			const { signerAddress, smartAccountAddress } = await this.getSmartAccountAddress(externalProvider, options);
-			console.log("Inside sendTransaction, checking Entry point deposit now ======= ");
-			const deposit = await entryPoint.balanceOf(smartAccountAddress);
-
-			if (deposit.isZero()) {
-				// First check if the signer has enough balance to deposit
-				const signerBalance = await signer.getBalance();
-				if (signerBalance.lt(utils.parseEther("0.01"))) {
-					throw new Error("Insufficient balance in signer account for Entry Point deposit");
-				}
-
-				console.log("Inside sendTransaction, depositing now ======= ");
-				const depositTxn = await entryPoint.depositTo(smartAccountAddress, {
-					value: utils.parseEther("0.01"),
-					gasLimit: 300000,
-				});
-				await depositTxn.wait();
-				console.log("Deposited 0.01 ETH to smart account", depositTxn.hash);
-			}
-		}
-
-		return modifiedUserOp;
-	}
-
 	async sendTransaction(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<string> {
-		// const modifiedUserOp = await this.checkEntryPointDeposit(externalProvider, userOperation, options);
 		try {
 			console.log("========== Sending transaction through bundler ==========");
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/send-transaction`, {
