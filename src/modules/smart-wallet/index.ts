@@ -55,45 +55,42 @@ export class SmartWallet extends Base {
 		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
 
-		console.log("Inside initSmartAccount | Smart Account Address: ", smartAccountAddress);
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 
 		if (contractCode === "0x") {
-			console.log("Inside initSmartAccount | Creating smart account ======= ");
 			const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), this.SMART_ACCOUNT_SALT, {
 				gasLimit: 300000,
 			});
 			await createTx.wait();
-			console.log("Created smart account =======", createTx.hash);
 		}
 
-		console.log("Inside initSmartAccount | Setting execution ======= ");
-		const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
-		// const ecdsaValidator = ECDSAValidator__factory.connect("0x180D6465F921C7E0DEA0040107D342c87455fFF5", signer);
-		// const validator = new Contract("0x180D6465F921C7E0DEA0040107D342c87455fFF5", ecdsaValidator.interface, externalProvider);
+		// console.log("Inside initSmartAccount | Setting execution ======= ");
+		// const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
+		// // const ecdsaValidator = ECDSAValidator__factory.connect("0x180D6465F921C7E0DEA0040107D342c87455fFF5", signer);
+		// // const validator = new Contract("0x180D6465F921C7E0DEA0040107D342c87455fFF5", ecdsaValidator.interface, externalProvider);
 
-		const batchActionsInterface = new utils.Interface(["function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, uint8 operation) external"]);
-		const funcSignature = batchActionsInterface.getSighash("executeBatch(address[],uint256[], bytes[], uint8)");
-		console.log("funcSignature = ", funcSignature);
+		// const batchActionsInterface = new utils.Interface(["function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, uint8 operation) external"]);
+		// const funcSignature = batchActionsInterface.getSighash("executeBatch(address[],uint256[], bytes[], uint8)");
+		// console.log("funcSignature = ", funcSignature);
 
-		// Valid until 2030
-		const validUntil = 1893456000;
+		// // Valid until 2030
+		// const validUntil = 1893456000;
 
-		// Valid after current block timestamp
-		// Get latest block
-		const block = await externalProvider.getBlock("latest");
-		// Get block timestamp
-		const timestamp = block.timestamp;
-		// Create validAfter param
-		const validAfter = BigNumber.from(timestamp);
+		// // Valid after current block timestamp
+		// // Get latest block
+		// const block = await externalProvider.getBlock("latest");
+		// // Get block timestamp
+		// const timestamp = block.timestamp;
+		// // Create validAfter param
+		// const validAfter = BigNumber.from(timestamp);
 
-		// Encode owner address
-		const owner = await signer.getAddress();
-		const enableData = utils.defaultAbiCoder.encode(["address"], [owner]);
+		// // Encode owner address
+		// const owner = await signer.getAddress();
+		// const enableData = utils.defaultAbiCoder.encode(["address"], [owner]);
 
-		const setExecutionTx = await kernelAccount.setExecution(funcSignature, this.BATCH_ACTIONS_EXECUTOR, "0x180D6465F921C7E0DEA0040107D342c87455fFF5", validUntil, validAfter, enableData);
-		await setExecutionTx.wait();
-		console.log("Set execution =======", setExecutionTx.hash);
+		// const setExecutionTx = await kernelAccount.setExecution(funcSignature, this.BATCH_ACTIONS_EXECUTOR, "0x180D6465F921C7E0DEA0040107D342c87455fFF5", validUntil, validAfter, enableData);
+		// await setExecutionTx.wait();
+		// console.log("Set execution =======", setExecutionTx.hash);
 		return true;
 	}
 

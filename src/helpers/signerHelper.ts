@@ -103,6 +103,7 @@ export async function batchTransactionRouting(provider: Web3Provider, transactio
 	}
 }
 
+// @ts-ignore
 export async function transactionRouting(provider: Web3Provider, transaction: Deferrable<TransactionRequest>, options?: BastionSignerOptions): Promise<TransactionResponse> {
 	await initParams(provider, options);
 	transaction.value = transaction.value || 0;
