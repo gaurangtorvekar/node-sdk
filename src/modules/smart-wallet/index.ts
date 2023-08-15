@@ -57,6 +57,7 @@ export class SmartWallet extends Base {
 
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 
+		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
 			const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), this.SMART_ACCOUNT_SALT, {
 				gasLimit: 300000,
@@ -64,33 +65,32 @@ export class SmartWallet extends Base {
 			await createTx.wait();
 		}
 
-		// console.log("Inside initSmartAccount | Setting execution ======= ");
-		// const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
-		// // const ecdsaValidator = ECDSAValidator__factory.connect("0x180D6465F921C7E0DEA0040107D342c87455fFF5", signer);
-		// // const validator = new Contract("0x180D6465F921C7E0DEA0040107D342c87455fFF5", ecdsaValidator.interface, externalProvider);
+		const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
 
-		// const batchActionsInterface = new utils.Interface(["function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, uint8 operation) external"]);
-		// const funcSignature = batchActionsInterface.getSighash("executeBatch(address[],uint256[], bytes[], uint8)");
-		// console.log("funcSignature = ", funcSignature);
+		const batchActionsInterface = new utils.Interface(["function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, uint8 operation) external"]);
+		const funcSignature = await batchActionsInterface.getSighash("executeBatch(address[],uint256[], bytes[], uint8)");
 
-		// // Valid until 2030
-		// const validUntil = 1893456000;
+		// First get the execution details from kernerlAccount
+		const executionDetails = await kernelAccount.getExecution(funcSignature);
+		// Only set the execution if it hasn't been set already
+		if (executionDetails[0] === 0) {
+			// Valid until 2030
+			const validUntil = 1893456000;
 
-		// // Valid after current block timestamp
-		// // Get latest block
-		// const block = await externalProvider.getBlock("latest");
-		// // Get block timestamp
-		// const timestamp = block.timestamp;
-		// // Create validAfter param
-		// const validAfter = BigNumber.from(timestamp);
+			// Valid after current block timestamp
+			const block = await externalProvider.getBlock("latest");
+			const timestamp = block.timestamp;
+			const validAfter = BigNumber.from(timestamp);
 
-		// // Encode owner address
-		// const owner = await signer.getAddress();
-		// const enableData = utils.defaultAbiCoder.encode(["address"], [owner]);
+			// Encode packed owner address
+			const owner = await signer.getAddress();
+			const ownerSliced = owner.slice(2).padStart(40, "0");
+			const packedData = utils.arrayify("0x" + ownerSliced);
 
-		// const setExecutionTx = await kernelAccount.setExecution(funcSignature, this.BATCH_ACTIONS_EXECUTOR, "0x180D6465F921C7E0DEA0040107D342c87455fFF5", validUntil, validAfter, enableData);
-		// await setExecutionTx.wait();
-		// console.log("Set execution =======", setExecutionTx.hash);
+			const setExecutionTx = await kernelAccount.setExecution(funcSignature, this.BATCH_ACTIONS_EXECUTOR, "0x180D6465F921C7E0DEA0040107D342c87455fFF5", validUntil, validAfter, packedData);
+			await setExecutionTx.wait();
+			console.log("Set execution =======", setExecutionTx.hash);
+		}
 		return true;
 	}
 
@@ -103,19 +103,18 @@ export class SmartWallet extends Base {
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, 0]);
 		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
-		// console.log("Inside prepareTransaction | initCode: ", initCode);
 		const gasPrice = await externalProvider.getGasPrice();
+
+		// Check if the smart account contract has been deployed and setExecution has been called
+		await this.initSmartAccount(externalProvider, options);
 
 		//Check if the smart account contract has been deployed
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 		let nonce;
 		if (contractCode === "0x") {
 			nonce = 0;
-			await this.initSmartAccount(externalProvider, options);
-			// initCode = "0x";
 		} else {
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
-			console.log("Nonce = ", nonce.toNumber());
 		}
 		const userOperation = {
 			sender: smartAccountAddress,
