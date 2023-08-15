@@ -2,7 +2,7 @@ import { Deferrable } from "ethers/lib/utils";
 import { Provider, Web3Provider, TransactionRequest, TransactionResponse } from "@ethersproject/providers";
 import { Wallet, constants, utils, ethers, Signer } from "ethers";
 import { SmartWallet } from "../smart-wallet";
-import { transactionRouting } from "../../helpers/signerHelper";
+import { transactionRouting, batchTransactionRouting } from "../../helpers/signerHelper";
 
 export interface BastionSignerOptions {
 	privateKey: string;
@@ -10,6 +10,12 @@ export interface BastionSignerOptions {
 	chainId: number;
 	gasToken?: string;
 	noSponsorship?: boolean;
+}
+
+export interface BasicTransaction {
+	to: string;
+	value?: number;
+	data?: string;
 }
 
 export class BastionConnect extends Signer {
@@ -55,6 +61,10 @@ export class BastionConnect extends Signer {
 
 	async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
 		return transactionRouting(this.externalProvider, transaction, this.options);
+	}
+
+	async executeBatch(transactions: BasicTransaction[]): Promise<TransactionResponse> {
+		return batchTransactionRouting(this.externalProvider, transactions, this.options);
 	}
 
 	async signTransaction(transaction: Deferrable<ethers.providers.TransactionRequest>): Promise<string> {

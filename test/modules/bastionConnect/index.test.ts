@@ -4,6 +4,7 @@ import { BastionConnect, BastionSignerOptions } from "../../../src/modules/basti
 import { SimpleAccountFactory__factory, EntryPoint__factory, SimpleAccount__factory, EntryPoint, UserOperationStruct } from "@account-abstraction/contracts";
 import { describe, beforeEach, it, expect } from "@jest/globals";
 import { skip } from "node:test";
+import { ERC721_ABI } from "../../utils/ERC721_ABI";
 
 let smartWallet: SmartWallet;
 let walletConnected;
@@ -156,6 +157,42 @@ describe("setupSmartAccount", () => {
 		const nftContract = new Contract(contractAddress, contractABI, bastionConnect);
 
 		const res = await nftContract.safeMint(address);
+		expect(res.hash).toHaveLength(66);
+	}, 70000);
+
+	it.skip("should batch mint 2 NFTs with LINK ERC20 gas", async () => {
+		let bastionConnect = new BastionConnect();
+
+		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
+		// Stackup Test ERC20 gas token  = 0x3870419Ba2BBf0127060bCB37f69A1b1C090992B
+		DEFAULT_CONFIG.gasToken = "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28";
+		// DEFAULT_CONFIG.gasToken = "0x3870419Ba2BBf0127060bCB37f69A1b1C090992B";
+		await bastionConnect.init(provider, DEFAULT_CONFIG);
+		const toAddress = "0x841056F279582d1dfD586c3C77e7821821B5B510";
+		const fromAddress = await bastionConnect.getAddress();
+		console.log("fromAddress = ", fromAddress);
+		const tokenId = 60;
+
+		//This contract is deployed on arb-goerli
+		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+		const erc721Contract = new ethers.Contract(contractAddress, ERC721_ABI, bastionConnect);
+
+		const transfer1 = {
+			to: contractAddress,
+			value: 0,
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 60]),
+		};
+
+		const transfer2 = {
+			to: contractAddress,
+			value: 0,
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 61]),
+		};
+
+		const transactionArray = [transfer1, transfer2];
+
+		const res = await bastionConnect.executeBatch(transactionArray);
+
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 });

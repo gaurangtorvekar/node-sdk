@@ -6,7 +6,7 @@ import { Wallet, constants, utils, ethers, Signer, BigNumber } from "ethers";
 import { SmartWallet } from "../modules/smart-wallet";
 import { TransactionReceipt } from "@ethersproject/abstract-provider";
 import axios from "axios";
-import { BastionSignerOptions } from "../modules/bastionConnect";
+import { BastionSignerOptions, BasicTransaction } from "../modules/bastionConnect";
 
 let options: BastionSignerOptions;
 let entryPoint: EntryPoint;
@@ -59,6 +59,50 @@ export async function createTransactionResponse(userOp1: UserOperationStruct): P
 	};
 }
 
+export async function batchTransactionRouting(provider: Web3Provider, transactions: BasicTransaction[], options?: BastionSignerOptions): Promise<TransactionResponse> {
+	await initParams(provider, options);
+
+	// Create arrays of to[], value[], data[] from transactions[]
+	const to: string[] = [];
+	const value: number[] = [];
+	const data: string[] = [];
+	transactions.forEach((transaction) => {
+		to.push(transaction.to as string);
+		//Consider a case where value is not provided
+		transaction.value = transaction.value || 0;
+		transaction.data = transaction.data || "0x";
+
+		value.push(transaction.value as number);
+		data.push(transaction.data as string);
+	});
+
+	const userOperation = await smartWallet.prepareBatchTransaction(provider, to, data, value, options);
+
+	let signedUserOperation;
+
+	let userOpToSign = userOperation;
+	if (!options.noSponsorship) {
+		try {
+			userOpToSign = options.gasToken
+				? await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken)
+				: await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
+		} catch (error) {
+			throw `error::transactionRouting: ${error.response.data.message}`;
+		}
+	}
+
+	signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
+
+	try {
+		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
+		console.log("Response of send transaction:  ", res);
+		return await createTransactionResponse(userOperation);
+	} catch (error) {
+		console.log("error:transactionRouting", error.response.data);
+		throw `error::transactionRouting: ${error.response.data.message}`;
+	}
+}
+
 export async function transactionRouting(provider: Web3Provider, transaction: Deferrable<TransactionRequest>, options?: BastionSignerOptions): Promise<TransactionResponse> {
 	await initParams(provider, options);
 	transaction.value = transaction.value || 0;
@@ -83,7 +127,7 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 
 	try {
 		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-		console.log("Resonse of send transaction:  ", res);
+		console.log("Response of send transaction:  ", res);
 		return await createTransactionResponse(userOperation);
 	} catch (error) {
 		console.log("error:transactionRouting", error.response.data);
