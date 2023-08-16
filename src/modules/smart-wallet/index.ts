@@ -44,7 +44,9 @@ export class SmartWallet extends Base {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const signerAddress = await signer.getAddress();
-		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SMART_ACCOUNT_SALT);
+		const smartAccountSalt = BigNumber.from(signerAddress);
+		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, smartAccountSalt);
+		
 		console.log("Using Smart Wallet:", smartAccountAddress);
 		return { smartAccountAddress, signerAddress };
 	}
@@ -59,39 +61,14 @@ export class SmartWallet extends Base {
 
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
-			const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), this.SMART_ACCOUNT_SALT, {
-				gasLimit: 300000,
+			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/create-account`, {
+				chainId: options.chainId,
+				eoa: signerAddress,
 			});
-			await createTx.wait();
+			console.log("createAccountResponse", response?.data.data.createAccountResponse);
+			if(response?.data.data.createAccountResponse.smartAccountAddress) return true;
+			return false;
 		}
-
-		const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
-
-		const batchActionsInterface = new utils.Interface(["function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, uint8 operation) external"]);
-		const funcSignature = await batchActionsInterface.getSighash("executeBatch(address[],uint256[], bytes[], uint8)");
-
-		// First get the execution details from kernerlAccount
-		const executionDetails = await kernelAccount.getExecution(funcSignature);
-		// Only set the execution if it hasn't been set already
-		if (executionDetails[0] === 0) {
-			// Valid until 2030
-			const validUntil = 1893456000;
-
-			// Valid after current block timestamp
-			const block = await externalProvider.getBlock("latest");
-			const timestamp = block.timestamp;
-			const validAfter = BigNumber.from(timestamp);
-
-			// Encode packed owner address
-			const owner = await signer.getAddress();
-			const ownerSliced = owner.slice(2).padStart(40, "0");
-			const packedData = utils.arrayify("0x" + ownerSliced);
-
-			const setExecutionTx = await kernelAccount.setExecution(funcSignature, this.BATCH_ACTIONS_EXECUTOR, "0x180D6465F921C7E0DEA0040107D342c87455fFF5", validUntil, validAfter, packedData);
-			await setExecutionTx.wait();
-			console.log("Set execution =======", setExecutionTx.hash);
-		}
-		return true;
 	}
 
 	async prepareTransaction(externalProvider: Web3Provider, to: string, value: number, options?: BastionSignerOptions, data?: string): Promise<aaContracts.UserOperationStruct> {
