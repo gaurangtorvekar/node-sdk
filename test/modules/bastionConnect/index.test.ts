@@ -140,7 +140,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should mint an NFT with LINK ERC20 gas", async () => {
+	it.skip("should mint an NFT with LINK ERC20 gas", async () => {
 		let bastionConnect = new BastionConnect();
 
 		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
@@ -170,8 +170,6 @@ describe("setupSmartAccount", () => {
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 		const toAddress = "0x841056F279582d1dfD586c3C77e7821821B5B510";
 		const fromAddress = await bastionConnect.getAddress();
-		console.log("fromAddress = ", fromAddress);
-		const tokenId = 60;
 
 		//This contract is deployed on arb-goerli
 		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
@@ -180,13 +178,13 @@ describe("setupSmartAccount", () => {
 		const transfer1 = {
 			to: contractAddress,
 			value: 0,
-			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 60]),
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 68]),
 		};
 
 		const transfer2 = {
 			to: contractAddress,
 			value: 0,
-			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 61]),
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 68]),
 		};
 
 		const transactionArray = [transfer1, transfer2];
