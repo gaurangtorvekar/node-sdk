@@ -18,7 +18,7 @@ export class SmartWallet extends Base {
 	BATCH_ACTIONS_EXECUTOR = "0xF3F98574AC89220B5ae422306dC38b947901b421";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
-	SMART_ACCOUNT_SALT = 1;
+	SALT = 1;
 
 	init(): Promise<void> {
 		//execute initialization steps
@@ -44,54 +44,31 @@ export class SmartWallet extends Base {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const signerAddress = await signer.getAddress();
-		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SMART_ACCOUNT_SALT);
+		const smartAccountSalt = BigNumber.from(signerAddress + this.SALT);
+		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, smartAccountSalt);
+
 		console.log("Using Smart Wallet:", smartAccountAddress);
 		return { smartAccountAddress, signerAddress };
 	}
 
 	// TODO - Feature - Enable creating this Smart Account on multiple chains
 	// TODO - Do this from the API so that Bastion is creating Smart Accounts for customers
-	async initSmartAccount(externalProvider: Web3Provider, options?: BastionSignerOptions): Promise<boolean> {
+	async initSmartAccount(externalProvider: Web3Provider, options?: BastionSignerOptions) {
 		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
-
+		console.log("smartAccountAddress", smartAccountAddress);
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
-			const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), this.SMART_ACCOUNT_SALT, {
-				gasLimit: 300000,
+			console.log("========== Deploying smart account ==========");
+			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/create-account`, {
+				chainId: options.chainId,
+				eoa: signerAddress,
+				salt: this.SALT,
 			});
-			await createTx.wait();
+			console.log("createAccountResponse", response?.data.data.createAccountResponse);
 		}
-
-		const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
-
-		const batchActionsInterface = new utils.Interface(["function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, uint8 operation) external"]);
-		const funcSignature = await batchActionsInterface.getSighash("executeBatch(address[],uint256[], bytes[], uint8)");
-
-		// First get the execution details from kernerlAccount
-		const executionDetails = await kernelAccount.getExecution(funcSignature);
-		// Only set the execution if it hasn't been set already
-		if (executionDetails[0] === 0) {
-			// Valid until 2030
-			const validUntil = 1893456000;
-
-			// Valid after current block timestamp
-			const block = await externalProvider.getBlock("latest");
-			const timestamp = block.timestamp;
-			const validAfter = BigNumber.from(timestamp);
-
-			// Encode packed owner address
-			const owner = await signer.getAddress();
-			const ownerSliced = owner.slice(2).padStart(40, "0");
-			const packedData = utils.arrayify("0x" + ownerSliced);
-
-			const setExecutionTx = await kernelAccount.setExecution(funcSignature, this.BATCH_ACTIONS_EXECUTOR, "0x180D6465F921C7E0DEA0040107D342c87455fFF5", validUntil, validAfter, packedData);
-			await setExecutionTx.wait();
-			console.log("Set execution =======", setExecutionTx.hash);
-		}
-		return true;
 	}
 
 	async prepareTransaction(externalProvider: Web3Provider, to: string, value: number, options?: BastionSignerOptions, data?: string): Promise<aaContracts.UserOperationStruct> {
