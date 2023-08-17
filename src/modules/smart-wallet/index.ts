@@ -18,7 +18,7 @@ export class SmartWallet extends Base {
 	BATCH_ACTIONS_EXECUTOR = "0xF3F98574AC89220B5ae422306dC38b947901b421";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
-	SMART_ACCOUNT_SALT = 1;
+	SALT = 1;
 
 	init(): Promise<void> {
 		//execute initialization steps
@@ -44,30 +44,30 @@ export class SmartWallet extends Base {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const signerAddress = await signer.getAddress();
-		const smartAccountSalt = BigNumber.from(signerAddress);
+		const smartAccountSalt = BigNumber.from(signerAddress + this.SALT);
 		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, smartAccountSalt);
-		
+
 		console.log("Using Smart Wallet:", smartAccountAddress);
 		return { smartAccountAddress, signerAddress };
 	}
 
 	// TODO - Feature - Enable creating this Smart Account on multiple chains
 	// TODO - Do this from the API so that Bastion is creating Smart Accounts for customers
-	async initSmartAccount(externalProvider: Web3Provider, options?: BastionSignerOptions): Promise<boolean> {
+	async initSmartAccount(externalProvider: Web3Provider, options?: BastionSignerOptions) {
 		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
-
+		console.log("smartAccountAddress", smartAccountAddress);
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
+			console.log("========== Deploying smart account ==========");
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/create-account`, {
 				chainId: options.chainId,
 				eoa: signerAddress,
+				salt: this.SALT,
 			});
 			console.log("createAccountResponse", response?.data.data.createAccountResponse);
-			if(response?.data.data.createAccountResponse.smartAccountAddress) return true;
-			return false;
 		}
 	}
 
