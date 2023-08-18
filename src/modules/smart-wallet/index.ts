@@ -19,7 +19,7 @@ export class SmartWallet extends Base {
 	VALIDATOR_ADDRESS = "0x180D6465F921C7E0DEA0040107D342c87455fFF5";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
-	SALT = 10;
+	SALT = 0;
 
 	init(): Promise<void> {
 		//execute initialization steps
