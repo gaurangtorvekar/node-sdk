@@ -1,6 +1,6 @@
 import { Base } from "../../base";
 import * as aaContracts from "@account-abstraction/contracts";
-import { Web3Provider } from "@ethersproject/providers";
+import { JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet, utils, Contract, BigNumber } from "ethers";
 import axios from "axios";
 import { ECDSAKernelFactory__factory, Kernel__factory, BatchActions__factory, ECDSAValidator__factory } from "./contracts";
@@ -18,14 +18,14 @@ export class SmartWallet extends Base {
 	BATCH_ACTIONS_EXECUTOR = "0xF3F98574AC89220B5ae422306dC38b947901b421";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
-	SALT = 8;
+	SALT = 9;
 
 	init(): Promise<void> {
 		//execute initialization steps
 		return;
 	}
 
-	private async initParams(externalProvider: Web3Provider, options?: BastionSignerOptions) {
+	private async initParams(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		let signer, wallet;
 		try {
 			const address = await externalProvider.getSigner().getAddress();
@@ -40,7 +40,7 @@ export class SmartWallet extends Base {
 	}
 
 	// TODO - make sure that setExecution has been called on the smart account
-	async getSmartAccountAddress(externalProvider: Web3Provider, options?: BastionSignerOptions) {
+	async getSmartAccountAddress(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const signerAddress = await signer.getAddress();
@@ -52,7 +52,7 @@ export class SmartWallet extends Base {
 
 	// TODO - Feature - Enable creating this Smart Account on multiple chains
 	// TODO - Do this from the API so that Bastion is creating Smart Accounts for customers
-	async initSmartAccount(externalProvider: Web3Provider, options?: BastionSignerOptions) {
+	async initSmartAccount(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
@@ -68,7 +68,7 @@ export class SmartWallet extends Base {
 		}
 	}
 
-	async prepareTransaction(externalProvider: Web3Provider, to: string, value: number, options?: BastionSignerOptions, data?: string): Promise<aaContracts.UserOperationStruct> {
+	async prepareTransaction(externalProvider: JsonRpcProvider, to: string, value: number, options?: BastionSignerOptions, data?: string): Promise<aaContracts.UserOperationStruct> {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
 		const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
@@ -107,7 +107,7 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
-	async prepareBatchTransaction(externalProvider: Web3Provider, to: string[], data: string[], value: number[], options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
+	async prepareBatchTransaction(externalProvider: JsonRpcProvider, to: string[], data: string[], value: number[], options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
 		const batchActions = BatchActions__factory.connect(smartAccountAddress, externalProvider);
@@ -147,7 +147,7 @@ export class SmartWallet extends Base {
 		return userOperation;
 	}
 
-	async signUserOperation(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
+	async signUserOperation(externalProvider: JsonRpcProvider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
 
 		const signature = await signer.signMessage(utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
@@ -193,7 +193,7 @@ export class SmartWallet extends Base {
 		}
 	}
 
-	async sendTransaction(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<string> {
+	async sendTransaction(externalProvider: JsonRpcProvider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<string> {
 		try {
 			console.log("========== Sending transaction through bundler ==========");
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/send-transaction`, {

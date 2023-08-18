@@ -1,5 +1,5 @@
 import { Deferrable } from "ethers/lib/utils";
-import { Provider, Web3Provider, TransactionRequest, TransactionResponse } from "@ethersproject/providers";
+import { Provider, Web3Provider, TransactionRequest, TransactionResponse, ExternalProvider, JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet, constants, utils, ethers, Signer } from "ethers";
 import { SmartWallet } from "../smart-wallet";
 import { transactionRouting, batchTransactionRouting } from "../../helpers/signerHelper";
@@ -21,11 +21,11 @@ export interface BasicTransaction {
 export class BastionConnect extends Signer {
 	signer: Signer;
 	address: string;
-	externalProvider: Web3Provider;
+	externalProvider: JsonRpcProvider;
 	options: BastionSignerOptions;
 	smartWalletInstance: SmartWallet;
 
-	async init(externalProvider: Web3Provider, options?: BastionSignerOptions) {
+	async init(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		const config = {
 			apiKey: "testApiKey",
 			baseUrl: "testBaseUrl",

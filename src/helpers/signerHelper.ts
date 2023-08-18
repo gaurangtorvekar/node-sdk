@@ -1,5 +1,5 @@
 import { Deferrable, hexValue, resolveProperties } from "ethers/lib/utils";
-import { Provider, Web3Provider, TransactionRequest, TransactionResponse } from "@ethersproject/providers";
+import { Provider, JsonRpcProvider, TransactionRequest, TransactionResponse } from "@ethersproject/providers";
 import { SimpleAccountFactory__factory, EntryPoint__factory, SimpleAccount__factory, EntryPoint, UserOperationStruct } from "@account-abstraction/contracts";
 import { ECDSAKernelFactory__factory } from "../modules/smart-wallet/contracts";
 import { Wallet, constants, utils, ethers, Signer, BigNumber } from "ethers";
@@ -14,7 +14,7 @@ let smartWallet: SmartWallet;
 const BASE_API_URL = "http://localhost:3000";
 const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 
-async function initParams(provider: Web3Provider, options1?: BastionSignerOptions) {
+async function initParams(provider: JsonRpcProvider, options1?: BastionSignerOptions) {
 	options = options1;
 	const config = {
 		apiKey: "testApiKey",
@@ -59,7 +59,7 @@ export async function createTransactionResponse(userOp1: UserOperationStruct): P
 	};
 }
 
-export async function batchTransactionRouting(provider: Web3Provider, transactions: BasicTransaction[], options?: BastionSignerOptions): Promise<TransactionResponse> {
+export async function batchTransactionRouting(provider: JsonRpcProvider, transactions: BasicTransaction[], options?: BastionSignerOptions): Promise<TransactionResponse> {
 	await initParams(provider, options);
 
 	// Create arrays of to[], value[], data[] from transactions[]
@@ -96,7 +96,7 @@ export async function batchTransactionRouting(provider: Web3Provider, transactio
 	try {
 		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
 		console.log("Response of send transaction:  ", res);
-		return await createTransactionResponse(userOperation);
+		return await createTransactionResponse(signedUserOperation);
 	} catch (error) {
 		console.log("error:transactionRouting", error.response.data);
 		throw `error::transactionRouting: ${error.response.data.message}`;
@@ -104,7 +104,7 @@ export async function batchTransactionRouting(provider: Web3Provider, transactio
 }
 
 // @ts-ignore
-export async function transactionRouting(provider: Web3Provider, transaction: Deferrable<TransactionRequest>, options?: BastionSignerOptions): Promise<TransactionResponse> {
+export async function transactionRouting(provider: JsonRpcProvider, transaction: Deferrable<TransactionRequest>, options?: BastionSignerOptions): Promise<TransactionResponse> {
 	await initParams(provider, options);
 	transaction.value = transaction.value || 0;
 	transaction.data = transaction.data || "0x";
@@ -129,7 +129,7 @@ export async function transactionRouting(provider: Web3Provider, transaction: De
 	try {
 		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
 		console.log("Response of send transaction:  ", res);
-		return await createTransactionResponse(userOperation);
+		return await createTransactionResponse(signedUserOperation);
 	} catch (error) {
 		console.log("error:transactionRouting", error.response.data);
 		throw `error::transactionRouting: ${error.response.data.message}`;
