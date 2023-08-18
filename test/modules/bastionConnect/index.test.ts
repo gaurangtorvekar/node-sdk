@@ -108,7 +108,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should mint an NFT gasless-ly", async () => {
+	it("should mint an NFT gasless-ly", async () => {
 		let bastionConnect = new BastionConnect();
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 

@@ -18,7 +18,7 @@ export class SmartWallet extends Base {
 	BATCH_ACTIONS_EXECUTOR = "0xF3F98574AC89220B5ae422306dC38b947901b421";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
-	SALT = 1;
+	SALT = 8;
 
 	init(): Promise<void> {
 		//execute initialization steps
@@ -44,8 +44,7 @@ export class SmartWallet extends Base {
 		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const signerAddress = await signer.getAddress();
-		const smartAccountSalt = BigNumber.from(signerAddress + this.SALT);
-		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, smartAccountSalt);
+		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
 
 		console.log("Using Smart Wallet:", smartAccountAddress);
 		return { smartAccountAddress, signerAddress };
@@ -56,18 +55,16 @@ export class SmartWallet extends Base {
 	async initSmartAccount(externalProvider: Web3Provider, options?: BastionSignerOptions) {
 		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
 		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
-		console.log("smartAccountAddress", smartAccountAddress);
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
-			console.log("========== Deploying smart account ==========");
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/create-account`, {
 				chainId: options.chainId,
 				eoa: signerAddress,
 				salt: this.SALT,
 			});
-			console.log("createAccountResponse", response?.data.data.createAccountResponse);
+			console.log("Deployed Smart Wallet - ", response.data?.data?.createAccountResponse);
 		}
 	}
 
