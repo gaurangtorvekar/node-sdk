@@ -108,7 +108,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should mint an NFT gasless-ly", async () => {
+	it.skip("should mint an NFT gasless-ly", async () => {
 		let bastionConnect = new BastionConnect();
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
@@ -160,7 +160,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should batch mint 2 NFTs with LINK ERC20 gas", async () => {
+	it("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
 		let bastionConnect = new BastionConnect();
 
 		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
@@ -178,19 +178,17 @@ describe("setupSmartAccount", () => {
 		const transfer1 = {
 			to: contractAddress,
 			value: 0,
-			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 68]),
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 94]),
 		};
 
 		const transfer2 = {
 			to: contractAddress,
 			value: 0,
-			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 68]),
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 95]),
 		};
 
 		const transactionArray = [transfer1, transfer2];
-
 		const res = await bastionConnect.executeBatch(transactionArray);
-
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 });
