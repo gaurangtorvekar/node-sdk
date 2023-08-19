@@ -39,7 +39,7 @@ export class BastionConnect extends Signer {
 	}
 
 	async getAddress(): Promise<string> {
-		const { smartAccountAddress } = await this.smartWalletInstance.getSmartAccountAddress(this.externalProvider, this.options);
+		const { smartAccountAddress } = await this.smartWalletInstance.initParams(this.externalProvider, this.options);
 		return smartAccountAddress;
 	}
 
@@ -51,8 +51,8 @@ export class BastionConnect extends Signer {
 		return this.signer;
 	}
 
-	async getTransactionCount(blockTag?: string | number): Promise<number> {
-		return this.signer.getTransactionCount(blockTag);
+	async getTransactionCount(block?: string | number): Promise<number> {
+		return this.signer.getTransactionCount(block);
 	}
 
 	async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {

@@ -20,7 +20,7 @@ export class SmartWallet {
 	BASE_API_URL = "http://localhost:3000";
 	SALT = 0;
 
-	private async initParams(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
+	async initParams(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		let signer, wallet;
 		try {
 			const address = await externalProvider.getSigner().getAddress();
@@ -31,41 +31,35 @@ export class SmartWallet {
 
 		const entryPoint = aaContracts.EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, signer);
 		const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
-		return { signer, entryPoint, kernelAccountFactory };
-	}
-
-	// TODO - make sure that setExecution has been called on the smart account
-	async getSmartAccountAddress(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
-		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
-		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const signerAddress = await signer.getAddress();
 		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
 
-		console.log("Using Smart Wallet:", smartAccountAddress);
-		return { smartAccountAddress, signerAddress };
+		console.log("Inside initParams | Smart Account Address: ", smartAccountAddress);
+
+		return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress };
 	}
 
 	// TODO - Feature - Enable creating this Smart Account on multiple chains
 	// TODO - Do this from the API so that Bastion is creating Smart Accounts for customers
-	async initSmartAccount(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
-		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
-		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
+	async initSmartAccount(externalProvider: JsonRpcProvider, smartAccountAddress: string, signerAddress: string, chainId: number): Promise<boolean> {
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/create-account`, {
-				chainId: options.chainId,
+				chainId: chainId,
 				eoa: signerAddress,
 				salt: this.SALT,
 			});
 			console.log("Deployed Smart Wallet - ", response.data?.data?.createAccountResponse);
+			return false;
+		} else {
+			return true;
 		}
 	}
 
 	async checkExecutionSet(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
-		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
-		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
+		const { smartAccountAddress, signer } = await this.initParams(externalProvider, options);
 		const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
 
 		const batchActionsInterface = new utils.Interface(["function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, uint8 operation) external"]);
@@ -109,8 +103,7 @@ export class SmartWallet {
 	}
 
 	async prepareTransaction(externalProvider: JsonRpcProvider, to: string, value: number, options?: BastionSignerOptions, data?: string): Promise<aaContracts.UserOperationStruct> {
-		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
-		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
+		const { smartAccountAddress, entryPoint, signerAddress } = await this.initParams(externalProvider, options);
 		const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
 		//TODO - make this customizable based on the type of transaction
@@ -120,12 +113,10 @@ export class SmartWallet {
 		const gasPrice = await externalProvider.getGasPrice();
 
 		// Check if the smart account contract has been deployed and setExecution has been called
-		await this.initSmartAccount(externalProvider, options);
+		const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId);
 
-		//Check if the smart account contract has been deployed
-		const contractCode = await externalProvider.getCode(smartAccountAddress);
 		let nonce;
-		if (contractCode === "0x") {
+		if (!smartWalletDeployed) {
 			nonce = 0;
 		} else {
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
@@ -148,8 +139,7 @@ export class SmartWallet {
 	}
 
 	async prepareBatchTransaction(externalProvider: JsonRpcProvider, to: string[], data: string[], value: number[], options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
-		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
-		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
+		const { smartAccountAddress, entryPoint, signerAddress } = await this.initParams(externalProvider, options);
 		const batchActions = BatchActions__factory.connect(smartAccountAddress, externalProvider);
 
 		//TODO - make this customizable based on the type of transaction
@@ -159,13 +149,11 @@ export class SmartWallet {
 		const gasPrice = await externalProvider.getGasPrice();
 
 		// Check if the smart account contract has been deployed and setExecution has been called
-		await this.initSmartAccount(externalProvider, options);
+		const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId);
 		await this.checkExecutionSet(externalProvider, options);
 
-		//Check if the smart account contract has been deployed
-		const contractCode = await externalProvider.getCode(smartAccountAddress);
 		let nonce;
-		if (contractCode === "0x") {
+		if (!smartWalletDeployed) {
 			nonce = 0;
 		} else {
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
