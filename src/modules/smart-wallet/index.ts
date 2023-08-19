@@ -1,4 +1,3 @@
-import { Base } from "../../base";
 import * as aaContracts from "@account-abstraction/contracts";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet, utils, Contract, BigNumber } from "ethers";
@@ -12,7 +11,7 @@ dotenv.config();
 
 const resourceName = "smartWallet";
 
-export class SmartWallet extends Base {
+export class SmartWallet {
 	ECDSAKernelFactory_Address = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 	BATCH_ACTIONS_EXECUTOR = "0xF3F98574AC89220B5ae422306dC38b947901b421";
@@ -20,11 +19,6 @@ export class SmartWallet extends Base {
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
 	SALT = 0;
-
-	init(): Promise<void> {
-		//execute initialization steps
-		return;
-	}
 
 	private async initParams(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		let signer, wallet;

@@ -1,6 +1,6 @@
 import { Deferrable } from "ethers/lib/utils";
-import { Provider, Web3Provider, TransactionRequest, TransactionResponse, ExternalProvider, JsonRpcProvider } from "@ethersproject/providers";
-import { Wallet, constants, utils, ethers, Signer } from "ethers";
+import { Provider, TransactionRequest, TransactionResponse, JsonRpcProvider } from "@ethersproject/providers";
+import { Wallet, ethers, Signer } from "ethers";
 import { SmartWallet } from "../smart-wallet";
 import { transactionRouting, batchTransactionRouting } from "../../helpers/signerHelper";
 
@@ -26,11 +26,7 @@ export class BastionConnect extends Signer {
 	smartWalletInstance: SmartWallet;
 
 	async init(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
-		const config = {
-			apiKey: "testApiKey",
-			baseUrl: "testBaseUrl",
-		};
-		this.smartWalletInstance = new SmartWallet(config);
+		this.smartWalletInstance = new SmartWallet();
 		this.externalProvider = externalProvider;
 		this.options = options;
 

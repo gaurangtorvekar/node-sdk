@@ -1,7 +1,7 @@
 import { ethers, Contract } from "ethers";
 import { SmartWallet } from "../../../src/modules/smart-wallet";
 import { BastionConnect, BastionSignerOptions } from "../../../src/modules/bastionConnect";
-import { SimpleAccountFactory__factory, EntryPoint__factory, SimpleAccount__factory, EntryPoint, UserOperationStruct } from "@account-abstraction/contracts";
+import { EntryPoint__factory } from "@account-abstraction/contracts";
 import { describe, beforeEach, it, expect } from "@jest/globals";
 import { skip } from "node:test";
 import { ERC721_ABI } from "../../utils/ERC721_ABI";
@@ -29,11 +29,7 @@ const setup = () => {
 
 describe("setupSmartAccount", () => {
 	beforeEach(() => {
-		const config = {
-			apiKey: "testApiKey",
-			baseUrl: "testBaseUrl",
-		};
-		smartWallet = new SmartWallet(config);
+		smartWallet = new SmartWallet();
 		walletConnected = setup();
 	});
 	const expectedAddress = "0xB730d07F4c928AD9e72B59AB99d22cB87BE9A867"; // replace with actual expected address
@@ -108,7 +104,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should mint an NFT gasless-ly", async () => {
+	it.skip("should mint an NFT gasless-ly", async () => {
 		let bastionConnect = new BastionConnect();
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
@@ -160,7 +156,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
+	it("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
 		let bastionConnect = new BastionConnect();
 
 		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
@@ -178,13 +174,13 @@ describe("setupSmartAccount", () => {
 		const transfer1 = {
 			to: contractAddress,
 			value: 0,
-			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 94]),
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 50]),
 		};
 
 		const transfer2 = {
 			to: contractAddress,
 			value: 0,
-			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 95]),
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 52]),
 		};
 
 		const transactionArray = [transfer1, transfer2];

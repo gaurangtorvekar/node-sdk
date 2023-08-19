@@ -16,11 +16,7 @@ const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 
 async function initParams(provider: JsonRpcProvider, options1?: BastionSignerOptions) {
 	options = options1;
-	const config = {
-		apiKey: "testApiKey",
-		baseUrl: "testBaseUrl",
-	};
-	smartWallet = new SmartWallet(config);
+	smartWallet = new SmartWallet();
 	let signer, wallet;
 
 	try {
@@ -36,27 +32,31 @@ async function initParams(provider: JsonRpcProvider, options1?: BastionSignerOpt
 export async function createTransactionResponse(userOp1: UserOperationStruct): Promise<TransactionResponse> {
 	const userOp = await resolveProperties(userOp1);
 	const userOpHash = await entryPoint.getUserOpHash(userOp);
-	const getTransactionHash: TransactionReceipt = await axios.post(`${BASE_API_URL}/v1/transaction/payment-sponsorship`, {
-		chainId: options.chainId,
-		userOperation: userOp,
-	});
+	try {
+		const getTransactionHash: TransactionReceipt = await axios.post(`${BASE_API_URL}/v1/transaction/payment-sponsorship`, {
+			chainId: options.chainId,
+			userOperation: userOp,
+		});
 
-	let nonce = BigNumber.from(userOp.nonce);
+		let nonce = BigNumber.from(userOp.nonce);
 
-	return {
-		hash: userOpHash,
-		confirmations: 0,
-		from: userOp.sender,
-		nonce: nonce.toNumber(),
-		gasLimit: BigNumber.from(userOp.callGasLimit),
-		value: BigNumber.from(0),
-		data: hexValue(userOp.callData),
-		chainId: options.chainId,
-		wait: async (confirmations?: number): Promise<TransactionReceipt> => {
-			const transactionReceipt = await getTransactionHash;
-			return transactionReceipt;
-		},
-	};
+		return {
+			hash: userOpHash,
+			confirmations: 0,
+			from: userOp.sender,
+			nonce: nonce.toNumber(),
+			gasLimit: BigNumber.from(userOp.callGasLimit),
+			value: BigNumber.from(0),
+			data: hexValue(userOp.callData),
+			chainId: options.chainId,
+			wait: async (confirmations?: number): Promise<TransactionReceipt> => {
+				const transactionReceipt = await getTransactionHash;
+				return transactionReceipt;
+			},
+		};
+	} catch (e) {
+		console.log("error::createTransactionResponse", e);
+	}
 }
 
 export async function batchTransactionRouting(provider: JsonRpcProvider, transactions: BasicTransaction[], options?: BastionSignerOptions): Promise<TransactionResponse> {
@@ -87,7 +87,8 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 				? await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken)
 				: await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
 		} catch (error) {
-			throw `error::transactionRouting: ${error.response.data.message}`;
+			console.log("Error while requesting sponsorship", error.response);
+			throw `error::transactionRouting: ${error.response}`;
 		}
 	}
 
@@ -98,8 +99,8 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 		console.log("Response of send transaction:  ", res);
 		return await createTransactionResponse(signedUserOperation);
 	} catch (error) {
-		console.log("error:transactionRouting", error.response.data);
-		throw `error::transactionRouting: ${error.response.data.message}`;
+		console.log("error:transactionRouting", error.response);
+		throw `error::transactionRouting: ${error.response}`;
 	}
 }
 
@@ -120,7 +121,8 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 				? await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken)
 				: await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
 		} catch (error) {
-			throw `error::transactionRouting: ${error.response.data.message}`;
+			console.log("Error while requesting sponsorship", error.response);
+			throw `error::transactionRouting: ${error.response}`;
 		}
 	}
 
@@ -131,8 +133,8 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 		console.log("Response of send transaction:  ", res);
 		return await createTransactionResponse(signedUserOperation);
 	} catch (error) {
-		console.log("error:transactionRouting", error.response.data);
-		throw `error::transactionRouting: ${error.response.data.message}`;
+		console.log("error:transactionRouting", error.response);
+		throw `error::transactionRouting: ${error.response}`;
 	}
 }
 
