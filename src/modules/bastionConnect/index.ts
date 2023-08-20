@@ -1,6 +1,6 @@
 import { Deferrable } from "ethers/lib/utils";
 import { Provider, TransactionRequest, TransactionResponse, JsonRpcProvider } from "@ethersproject/providers";
-import { Wallet, ethers, Signer } from "ethers";
+import { ethers, Signer } from "ethers";
 import { SmartWallet } from "../smart-wallet";
 import { transactionRouting, batchTransactionRouting } from "../../helpers/signerHelper";
 

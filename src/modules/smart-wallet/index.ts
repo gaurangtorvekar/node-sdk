@@ -1,15 +1,12 @@
 import * as aaContracts from "@account-abstraction/contracts";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { Wallet, utils, Contract, BigNumber } from "ethers";
+import { Wallet, utils, BigNumber } from "ethers";
 import axios from "axios";
-import { ECDSAKernelFactory__factory, Kernel__factory, BatchActions__factory, ECDSAValidator__factory } from "./contracts";
-import { BastionSignerOptions, BasicTransaction } from "../bastionConnect";
+import { ECDSAKernelFactory__factory, Kernel__factory, BatchActions__factory } from "./contracts";
+import { BastionSignerOptions } from "../bastionConnect";
 
 const dotenv = require("dotenv");
-
 dotenv.config();
-
-const resourceName = "smartWallet";
 
 export class SmartWallet {
 	ECDSAKernelFactory_Address = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
@@ -21,7 +18,7 @@ export class SmartWallet {
 	SALT = 0;
 
 	async initParams(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
-		let signer, wallet;
+		let signer;
 		try {
 			const address = await externalProvider.getSigner().getAddress();
 			signer = externalProvider.getSigner();
