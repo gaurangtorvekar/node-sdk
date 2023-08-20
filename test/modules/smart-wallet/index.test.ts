@@ -37,40 +37,6 @@ describe("SmartWallet", () => {
 	describe("setupSmartAccount", () => {
 		const expectedAddress = "0xB730d07F4c928AD9e72B59AB99d22cB87BE9A867"; // replace with actual expected address
 
-		it.skip("should return expected sender address by calling getSmartAccountAddress", async () => {
-			let result = await smartWallet.getSmartAccountAddress(provider, DEFAULT_CONFIG);
-			expect(result).toEqual(expectedAddress);
-		});
-
-		// Skipping this test for now because we don't want to create a new smart account every time we run the tests
-		it.skip("should create a Smart Account and return true", async () => {
-			let result = await smartWallet.initSmartAccount(provider, DEFAULT_CONFIG);
-			expect(result).toEqual(true);
-			let result2 = await smartWallet.getSmartAccountAddress(provider, DEFAULT_CONFIG);
-			expect(result2).toEqual(expectedAddress);
-		}, 20000);
-
-		it.skip("should return the balance of native currency", async () => {
-			let result = await smartWallet.getNativeCurrencyBalance(provider, DEFAULT_CONFIG);
-			expect(result).toBeGreaterThan(0);
-		});
-
-		it.skip("should return the balance of ERC20 tokens", async () => {
-			let result = await smartWallet.getERC20TokenBalance(provider, "0x326C977E6efc84E512bB9C30f76E30c160eD06FB", DEFAULT_CONFIG);
-			expect(result).toBeGreaterThan(0);
-		});
-
-		it.skip("should return the balance of a batch of ERC20 tokens", async () => {
-			let result = await smartWallet.getERC20TokenBalanceBatch(provider, ["0xe11A86849d99F524cAC3E7A0Ec1241828e332C62", "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"], DEFAULT_CONFIG);
-			const allGreaterThanZero = result.every((value) => value > 0);
-			expect(allGreaterThanZero).toBe(true);
-		});
-
-		it.skip("should return true if smart account is deployed", async () => {
-			let result = await smartWallet.isSmartAccountDeployed(provider, DEFAULT_CONFIG);
-			expect(result).toEqual(true);
-		});
-
 		// it.skip("should return the deposit amount of the Smart Account from Entry Point", async () => {
 		// 	let result = await smartWallet.getEntryPointDeposit(provider, DEFAULT_CONFIG);
 		// 	expect(result).toBeGreaterThan(0);

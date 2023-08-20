@@ -10,6 +10,7 @@ import { BastionSignerOptions, BasicTransaction } from "../modules/bastionConnec
 
 let options: BastionSignerOptions;
 let entryPoint: EntryPoint;
+let chainId: number;
 let smartWallet: SmartWallet;
 const BASE_API_URL = "http://localhost:3000";
 const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
@@ -18,6 +19,9 @@ async function initParams(provider: JsonRpcProvider, options1?: BastionSignerOpt
 	options = options1;
 	smartWallet = new SmartWallet();
 	let signer, wallet;
+
+	const network = await provider.getNetwork();
+	chainId = network.chainId;
 
 	try {
 		const address = await provider.getSigner().getAddress();
@@ -34,7 +38,7 @@ export async function createTransactionResponse(userOp1: UserOperationStruct): P
 	const userOpHash = await entryPoint.getUserOpHash(userOp);
 	try {
 		const getTransactionHash: TransactionReceipt = await axios.post(`${BASE_API_URL}/v1/transaction/payment-sponsorship`, {
-			chainId: options.chainId,
+			chainId: chainId,
 			userOperation: userOp,
 		});
 
@@ -48,7 +52,7 @@ export async function createTransactionResponse(userOp1: UserOperationStruct): P
 			gasLimit: BigNumber.from(userOp.callGasLimit),
 			value: BigNumber.from(0),
 			data: hexValue(userOp.callData),
-			chainId: options.chainId,
+			chainId: chainId,
 			wait: async (confirmations?: number): Promise<TransactionReceipt> => {
 				const transactionReceipt = await getTransactionHash;
 				return transactionReceipt;
@@ -78,9 +82,7 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 		let userOpToSign = userOperation;
 
 		if (!options.noSponsorship) {
-			userOpToSign = options.gasToken
-				? await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken)
-				: await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
+			userOpToSign = options.gasToken ? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken) : await smartWallet.getPaymasterSponsorship(chainId, userOperation);
 		}
 
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
@@ -109,9 +111,7 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 		let userOpToSign = userOperation;
 
 		if (!options.noSponsorship) {
-			userOpToSign = options.gasToken
-				? await smartWallet.getPaymasterSponsorshipERC20(options.chainId, userOperation, options.gasToken)
-				: await smartWallet.getPaymasterSponsorship(options.chainId, userOperation);
+			userOpToSign = options.gasToken ? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken) : await smartWallet.getPaymasterSponsorship(chainId, userOperation);
 		}
 
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
