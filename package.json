@@ -1,26 +1,25 @@
 {
-	"name": "bastion",
-	"version": "1.0.0",
-	"description": "",
+	"name": "@bastion/sdk",
+	"version": "0.1.0-alpha.1",
+	"description": "Bastion SDK: A modular, open-source TypeScript SDK for seamless integration of multi-chain wallet functionality. Simplify decentralized app development with unified accounts, built-in multi-signature support, and more. ERC4337-compatible.",
 	"main": "dist/index.js",
 	"module": "dist/index.m.js",
 	"unpkg": "dist/index.umd.js",
 	"types": "dist/index.d.ts",
 	"scripts": {
 		"build": "rm -rf dist && microbundle --tsconfig tsconfig.json --no-sourcemap",
-		"test": "jest",
-		"compile": "tsc"
+		"test": "jest"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/indorseio/bastion.git"
+		"url": "git+https://github.com/bastion-wallet/sdk"
 	},
-	"author": "",
-	"license": "ISC",
+	"author": "Gaurang Torvekar | Indorse",
+	"license": "MIT",
 	"bugs": {
-		"url": "https://github.com/indorseio/bastion/issues"
+		"url": "https://github.com/bastion-wallet/sdk/issues"
 	},
-	"homepage": "https://github.com/indorseio/bastion#readme",
+	"homepage": "https://github.com/bastion-wallet/sdk#readme",
 	"devDependencies": {
 		"@types/jest": "^29.5.3",
 		"@types/node": "^20.4.2",
@@ -37,3 +36,4 @@
 		"ethers": "^5.7.2"
 	}
 }
+
