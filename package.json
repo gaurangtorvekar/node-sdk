@@ -1,6 +1,6 @@
 {
 	"name": "@bastion-wallet/sdk",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "Bastion SDK: A modular, open-source TypeScript SDK for seamless integration of multi-chain wallet functionality. Simplify decentralized app development with unified accounts, built-in multi-signature support, and more. ERC4337-compatible.",
 	"main": "dist/index.js",
 	"module": "dist/index.m.js",
