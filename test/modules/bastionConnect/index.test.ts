@@ -18,6 +18,7 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 	// chainId: 5,
 	rpcUrl: process.env.RPC_URL3 || "", //arb-goerli
 	chainId: 421613,
+	apiKey: "" //<add_api_key>
 };
 
 const setup = () => {
