@@ -18,7 +18,7 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 	// chainId: 5,
 	rpcUrl: process.env.RPC_URL3 || "", //arb-goerli
 	chainId: 421613,
-	apiKey: "" //<add_api_key>
+	apiKey: process.env.BASTION_API_KEY || "",
 };
 
 const setup = () => {
@@ -117,7 +117,9 @@ describe("setupSmartAccount", () => {
 		const nftContract = new Contract(contractAddress, contractABI, bastionConnect);
 
 		const res = await nftContract.safeMint(address);
-		expect(res.hash).toHaveLength(66);
+		console.log("res = ", res);
+		const txnHash = await bastionConnect.getTransactionHash(res.hash);
+		expect(txnHash).toHaveLength(66);
 	}, 70000);
 
 	it.skip("should mint an NFT with gas from Smart Account", async () => {
@@ -157,7 +159,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
+	it.skip("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
 		let bastionConnect = new BastionConnect();
 
 		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"

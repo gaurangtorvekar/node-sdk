@@ -2,7 +2,7 @@ import { Deferrable } from "ethers/lib/utils";
 import { Provider, TransactionRequest, TransactionResponse, JsonRpcProvider } from "@ethersproject/providers";
 import { ethers, Signer } from "ethers";
 import { SmartWallet } from "../smart-wallet";
-import { transactionRouting, batchTransactionRouting } from "../../helpers/signerHelper";
+import { transactionRouting, batchTransactionRouting, getTransactionHash } from "../../helpers/signerHelper";
 
 export interface BastionSignerOptions {
 	privateKey: string;
@@ -32,6 +32,10 @@ export class BastionConnect extends Signer {
 		this.options = options;
 	}
 
+	constructor() {
+		super();
+	}
+
 	async getAddress(): Promise<string> {
 		const { smartAccountAddress } = await this.smartWalletInstance.initParams(this.externalProvider, this.options);
 		return smartAccountAddress;
@@ -59,6 +63,10 @@ export class BastionConnect extends Signer {
 
 	async signTransaction(transaction: Deferrable<ethers.providers.TransactionRequest>): Promise<string> {
 		throw new Error("signTransaction Method not implemented.");
+	}
+
+	async getTransactionHash(userOpHash: string): Promise<string> {
+		return getTransactionHash(this.externalProvider, userOpHash, this.options);
 	}
 
 	connect(provider: Provider): ethers.Signer {
