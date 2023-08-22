@@ -105,23 +105,6 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should mint an NFT gasless-ly", async () => {
-		let bastionConnect = new BastionConnect();
-		await bastionConnect.init(provider, DEFAULT_CONFIG);
-
-		//This contract is deployed on arb-goerli
-		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
-		const contractABI = ["function safeMint(address to) public"];
-
-		const address = await bastionConnect.getAddress();
-		const nftContract = new Contract(contractAddress, contractABI, bastionConnect);
-
-		const res = await nftContract.safeMint(address);
-		console.log("res = ", res);
-		const txnHash = await bastionConnect.getTransactionHash(res.hash);
-		expect(txnHash).toHaveLength(66);
-	}, 70000);
-
 	it.skip("should mint an NFT with gas from Smart Account", async () => {
 		let bastionConnect = new BastionConnect();
 
@@ -190,5 +173,29 @@ describe("setupSmartAccount", () => {
 		const res = await bastionConnect.executeBatch(transactionArray);
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
+
+	it.skip("should mint an NFT gasless-ly", async () => {
+		let bastionConnect = new BastionConnect();
+		await bastionConnect.init(provider, DEFAULT_CONFIG);
+
+		//This contract is deployed on arb-goerli
+		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+		const contractABI = ["function safeMint(address to) public"];
+
+		const address = await bastionConnect.getAddress();
+		const nftContract = new Contract(contractAddress, contractABI, bastionConnect);
+
+		const res = await nftContract.safeMint(address);
+		console.log("res = ", res);
+		const txnHash = await bastionConnect.getTransactionHash(res.hash);
+		expect(txnHash).toHaveLength(66);
+	}, 70000);
+
+	it.skip("should throw for invalid chainId", async () => {
+		let bastionConnect = new BastionConnect();
+
+		DEFAULT_CONFIG.chainId = 1234;
+		await expect(bastionConnect.init(provider, DEFAULT_CONFIG)).rejects.toThrow("Chain not supported");
+	});
 });
 

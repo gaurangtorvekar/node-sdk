@@ -3,6 +3,7 @@ import { Provider, TransactionRequest, TransactionResponse, JsonRpcProvider } fr
 import { ethers, Signer } from "ethers";
 import { SmartWallet } from "../smart-wallet";
 import { transactionRouting, batchTransactionRouting, getTransactionHash } from "../../helpers/signerHelper";
+import { checkChainCompatibility } from "../../helper";
 
 export interface BastionSignerOptions {
 	privateKey: string;
@@ -29,7 +30,16 @@ export class BastionConnect extends Signer {
 	async init(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		this.smartWalletInstance = new SmartWallet();
 		this.externalProvider = externalProvider;
-		this.options = options;
+		this.options = options || {
+			privateKey: "",
+			rpcUrl: "",
+			chainId: 0,
+			apiKey: "",
+		};
+		const chainId = options?.chainId || (await externalProvider.getNetwork()).chainId;
+
+		//Check whether the SDK supports this chain
+		await checkChainCompatibility(chainId);
 	}
 
 	constructor() {
