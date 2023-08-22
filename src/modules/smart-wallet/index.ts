@@ -5,9 +5,6 @@ import axios from "axios";
 import { ECDSAKernelFactory__factory, Kernel__factory, BatchActions__factory } from "./contracts";
 import { BastionSignerOptions } from "../bastionConnect";
 
-const dotenv = require("dotenv");
-dotenv.config();
-
 export class SmartWallet {
 	ECDSAKernelFactory_Address = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
