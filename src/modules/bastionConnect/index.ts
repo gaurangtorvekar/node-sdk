@@ -8,6 +8,7 @@ export interface BastionSignerOptions {
 	privateKey: string;
 	rpcUrl: string;
 	chainId: number;
+	apiKey: string;
 	gasToken?: string;
 	noSponsorship?: boolean;
 }
