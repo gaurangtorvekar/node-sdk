@@ -32,14 +32,19 @@ async function initParams(provider: JsonRpcProvider, options1?: BastionSignerOpt
 	entryPoint = EntryPoint__factory.connect(ENTRY_POINT_ADDRESS, signer);
 }
 
-export async function createTransactionResponse(userOp1: UserOperationStruct): Promise<TransactionResponse> {
+export async function createTransactionResponse(userOp1: UserOperationStruct, apiKey: string): Promise<TransactionResponse> {
 	const userOp = await resolveProperties(userOp1);
 	const userOpHash = await entryPoint.getUserOpHash(userOp);
 	try {
-		const getTransactionHash: TransactionReceipt = await axios.post(`${BASE_API_URL}/v1/transaction/payment-sponsorship`, {
-			chainId: chainId,
-			userOperation: userOp,
-		});
+		const headers = { 'x-api-key': apiKey }
+		const getTransactionHash: TransactionReceipt = await axios.post(
+			`${BASE_API_URL}/v1/transaction/payment-sponsorship`,
+			{
+				chainId: chainId,
+				userOperation: userOp,
+			},
+			{ headers }
+		);
 
 		let nonce = BigNumber.from(userOp.nonce);
 
@@ -80,14 +85,14 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 		let userOpToSign = userOperation;
 
 		if (!options.noSponsorship) {
-			userOpToSign = options.gasToken ? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken) : await smartWallet.getPaymasterSponsorship(chainId, userOperation);
+			userOpToSign = options.gasToken ? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey) : await smartWallet.getPaymasterSponsorship(chainId, userOperation, options.apiKey);
 		}
 
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
 		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
 
 		console.log("Response of send transaction: ", res);
-		return await createTransactionResponse(signedUserOperation);
+		return await createTransactionResponse(signedUserOperation, options.apiKey);
 	} catch (error) {
 		console.error("Error in batchTransactionRouting:", error.message);
 		throw new Error(`batchTransactionRouting error: ${error.message}`);
@@ -109,7 +114,7 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 		let userOpToSign = userOperation;
 
 		if (!options.noSponsorship) {
-			userOpToSign = options.gasToken ? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken) : await smartWallet.getPaymasterSponsorship(chainId, userOperation);
+			userOpToSign = options.gasToken ? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey) : await smartWallet.getPaymasterSponsorship(chainId, userOperation, options.apiKey);
 		}
 
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
@@ -117,7 +122,7 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
 		console.log("Response of send transaction: ", res);
 
-		return await createTransactionResponse(signedUserOperation);
+		return await createTransactionResponse(signedUserOperation, options.apiKey);
 	} catch (error) {
 		console.error("Error in transactionRouting:", error.message);
 		throw new Error(`transactionRouting error: ${error.message}`);

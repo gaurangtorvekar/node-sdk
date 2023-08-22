@@ -38,16 +38,20 @@ export class SmartWallet {
 
 	// TODO - Feature - Enable creating this Smart Account on multiple chains
 	// TODO - Do this from the API so that Bastion is creating Smart Accounts for customers
-	async initSmartAccount(externalProvider: JsonRpcProvider, smartAccountAddress: string, signerAddress: string, chainId: number): Promise<boolean> {
+	async initSmartAccount(externalProvider: JsonRpcProvider, smartAccountAddress: string, signerAddress: string, chainId: number, apiKey: string): Promise<boolean> {
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
-
+		const headers = {
+			'x-api-key': apiKey
+		}
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
 			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/create-account`, {
 				chainId: chainId,
 				eoa: signerAddress,
 				salt: this.SALT,
-			});
+			},
+			{ headers }
+			);
 			console.log("Deployed Smart Wallet - ", response.data?.data?.createAccountResponse);
 			return false;
 		} else {
@@ -89,7 +93,7 @@ export class SmartWallet {
 			]);
 
 			const userOperation = await this.prepareTransaction(externalProvider, smartAccountAddress, 0, options, setExecutionCallData);
-			const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation);
+			const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation, options.apiKey);
 			const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
 			await this.sendTransaction(externalProvider, signedUserOperation, options);
 
@@ -110,7 +114,7 @@ export class SmartWallet {
 		const gasPrice = await externalProvider.getGasPrice();
 
 		// Check if the smart account contract has been deployed and setExecution has been called
-		const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId);
+		const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
 
 		let nonce;
 		if (!smartWalletDeployed) {
@@ -146,7 +150,7 @@ export class SmartWallet {
 		const gasPrice = await externalProvider.getGasPrice();
 
 		// Check if the smart account contract has been deployed and setExecution has been called
-		const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId);
+		const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
 		await this.checkExecutionSet(externalProvider, options);
 
 		let nonce;
@@ -185,13 +189,15 @@ export class SmartWallet {
 		return userOperation;
 	}
 
-	private async getSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, endpoint: string, erc20Token?: string): Promise<aaContracts.UserOperationStruct> {
+	private async getSponsorship(apiKey: string, chainId: number, userOperation: aaContracts.UserOperationStruct, endpoint: string, erc20Token?: string): Promise<aaContracts.UserOperationStruct> {
 		try {
 			console.log("========== Calling Pimlico Paymaster to sponsor gas ==========");
 			const payload = { chainId, userOperation };
 			if (erc20Token) payload["erc20Token"] = erc20Token;
-
-			const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload);
+			const headers = { 
+				'x-api-key': apiKey
+			}
+			const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload, {headers});
 			const updatedUserOperation = response?.data?.data?.paymasterDataResponse?.userOperation;
 
 			console.log("Inside getSponsorship | Sponsored user operation: ", updatedUserOperation);
@@ -202,17 +208,17 @@ export class SmartWallet {
 		}
 	}
 
-	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct): Promise<aaContracts.UserOperationStruct> {
+	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, apiKey: string): Promise<aaContracts.UserOperationStruct> {
 		try {
-			return await this.getSponsorship(chainId, userOperation, "/v1/transaction/payment-sponsorship");
+			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship");
 		} catch (error) {
 			throw error;
 		}
 	}
 
-	async getPaymasterSponsorshipERC20(chainId: number, userOperation: aaContracts.UserOperationStruct, erc20Token: string): Promise<aaContracts.UserOperationStruct> {
+	async getPaymasterSponsorshipERC20(chainId: number, userOperation: aaContracts.UserOperationStruct, erc20Token: string, apiKey: string): Promise<aaContracts.UserOperationStruct> {
 		try {
-			return await this.getSponsorship(chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
+			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
 		} catch (error) {
 			throw error;
 		}
@@ -221,10 +227,17 @@ export class SmartWallet {
 	async sendTransaction(externalProvider: JsonRpcProvider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<string> {
 		try {
 			console.log("========== Sending transaction through bundler ==========");
-			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/send-transaction`, {
-				chainId: options.chainId,
-				userOperation: userOperation,
-			});
+			const headers = {
+				"x-api-key": options.apiKey,
+			};
+			const response = await axios.post(
+				`${this.BASE_API_URL}/v1/transaction/send-transaction`,
+				{
+					chainId: options.chainId,
+					userOperation: userOperation,
+				},
+				{ headers }
+			);
 			const sendTransactionResponse = response?.data.data.sendTransactionResponse;
 			return sendTransactionResponse;
 		} catch (e) {
@@ -233,9 +246,12 @@ export class SmartWallet {
 		}
 	}
 
-	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number): Promise<Object> {
+	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number, apiKey: string): Promise<Object> {
 		try {
-			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`);
+			const headers = {
+				"x-api-key": apiKey,
+			};
+			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, {headers});
 			console.log(response);
 			const trxReceipt = response?.data.data.trxReceipt;
 			console.log("Inside getTransactionReceiptByUserOpHash | UserOperation hash:", trxReceipt);
