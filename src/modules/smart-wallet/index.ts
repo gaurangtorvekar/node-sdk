@@ -38,16 +38,18 @@ export class SmartWallet {
 	async initSmartAccount(externalProvider: JsonRpcProvider, smartAccountAddress: string, signerAddress: string, chainId: number, apiKey: string): Promise<boolean> {
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 		const headers = {
-			'x-api-key': apiKey
-		}
+			"x-api-key": apiKey,
+		};
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
-			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/create-account`, {
-				chainId: chainId,
-				eoa: signerAddress,
-				salt: this.SALT,
-			},
-			{ headers }
+			const response = await axios.post(
+				`${this.BASE_API_URL}/v1/transaction/create-account`,
+				{
+					chainId: chainId,
+					eoa: signerAddress,
+					salt: this.SALT,
+				},
+				{ headers }
 			);
 			console.log("Deployed Smart Wallet - ", response.data?.data?.createAccountResponse);
 			return false;
@@ -191,10 +193,10 @@ export class SmartWallet {
 			console.log("========== Calling Pimlico Paymaster to sponsor gas ==========");
 			const payload = { chainId, userOperation };
 			if (erc20Token) payload["erc20Token"] = erc20Token;
-			const headers = { 
-				'x-api-key': apiKey
-			}
-			const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload, {headers});
+			const headers = {
+				"x-api-key": apiKey,
+			};
+			const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload, { headers });
 			const updatedUserOperation = response?.data?.data?.paymasterDataResponse?.userOperation;
 
 			console.log("Inside getSponsorship | Sponsored user operation: ", updatedUserOperation);
@@ -243,15 +245,14 @@ export class SmartWallet {
 		}
 	}
 
-	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number, apiKey: string): Promise<Object> {
+	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number, apiKey: string): Promise<string> {
 		try {
 			const headers = {
 				"x-api-key": apiKey,
 			};
-			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, {headers});
-			console.log(response);
-			const trxReceipt = response?.data.data.trxReceipt;
-			console.log("Inside getTransactionReceiptByUserOpHash | UserOperation hash:", trxReceipt);
+			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
+			const trxReceipt = response?.data.data.trxReceipt.receipt.transactionHash;
+			console.log("Inside getTransactionReceiptByUserOpHash | Transaction hash:", trxReceipt);
 			return trxReceipt;
 		} catch (e) {
 			console.log("Error from getTransactionReceiptByUserOpHash api call: ", e.message);
