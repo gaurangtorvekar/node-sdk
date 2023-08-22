@@ -1,6 +1,6 @@
-# Bastion SDK
+# Bastion Wallet SDK
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/yourusername/bastion-sdk/actions) [![Version](https://img.shields.io/npm/v/bastion-sdk)](https://www.npmjs.com/package/bastion-sdk) [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/yourusername/bastion-sdk/blob/main/LICENSE)
+[![Version](https://img.shields.io/npm/v/bastion-wallet-sdk)](https://www.npmjs.com/package/bastion-wallet-sdk) [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/bastion-wallet/sdk/blob/main/LICENSE)
 
 ## Overview
 
@@ -24,16 +24,16 @@ With Bastion, you can provide a seamless multi-chain experience to your users. I
 
 ## Installation
 
-Install Bastion SDK using npm:
+Install Bastion Wallet SDK using npm:
 
 ```bash
-npm install bastion-sdk
+npm install bastion-wallet-sdk
 ```
 
 Or with yarn:
 
 ```bash
-yarn add bastion-sdk
+yarn add bastion-wallet-sdk
 ```
 
 ---
@@ -43,7 +43,7 @@ yarn add bastion-sdk
 Here's a simple example to get you started:
 
 ```typescript
-import { Bastion } from 'bastion-sdk';
+import { Bastion } from 'bastion-wallet-sdk';
 
 const bastion = new Bastion();
 const bastionConnect = await bastion.bastionConnect;
@@ -52,7 +52,7 @@ const CONFIG = {
 	chainId: <chain_id>,
 	privateKey: <your_private_key>,
 	rpcUrl: <RPC_URL>,
-};			
+};
 bastionConnect.init(<your_web3Provider>, CONFIG);
 ```
 
@@ -62,7 +62,7 @@ For more detailed examples, check the [Demo Examples](https://github.com/bastion
 
 ## Documentation
 
-Check out the comprehensive [Documentation](https://link-to-documentation) for more in-depth tutorials, API references, and more.
+Check out the comprehensive [Documentation](https://bastion-4.gitbook.io/bastion-sdk/) for more in-depth tutorials, API references, and more.
 
 ---
 
@@ -80,8 +80,9 @@ Bastion SDK is licensed under the [MIT License](/LICENSE).
 
 ## Support
 
-For general questions, join our [Discord Channel](https://discord.gg/your-discord-link) or for issues and feature requests, please open an [issue](https://github.com/yourusername/bastion-sdk/issues).
+For general questions, join our [Discord Channel](https://discord.gg/your-discord-link) or for issues and feature requests, please open an [issue](https://github.com/bastion-wallet/sdk/issues).
 
 ---
 
 Build the future of multi-chain crypto applications with Bastion today! 🚀
+
