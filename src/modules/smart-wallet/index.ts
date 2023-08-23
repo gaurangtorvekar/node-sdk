@@ -33,8 +33,6 @@ export class SmartWallet {
 		return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress };
 	}
 
-	// TODO - Feature - Enable creating this Smart Account on multiple chains
-	// TODO - Do this from the API so that Bastion is creating Smart Accounts for customers
 	async initSmartAccount(externalProvider: JsonRpcProvider, smartAccountAddress: string, signerAddress: string, chainId: number, apiKey: string): Promise<boolean> {
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 		const headers = {
@@ -106,7 +104,6 @@ export class SmartWallet {
 		const { smartAccountAddress, entryPoint, signerAddress } = await this.initParams(externalProvider, options);
 		const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
-		//TODO - make this customizable based on the type of transaction
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, 0]);
 		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
@@ -142,7 +139,6 @@ export class SmartWallet {
 		const { smartAccountAddress, entryPoint, signerAddress } = await this.initParams(externalProvider, options);
 		const batchActions = BatchActions__factory.connect(smartAccountAddress, externalProvider);
 
-		//TODO - make this customizable based on the type of transaction
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = batchActions.interface.encodeFunctionData("executeBatch", [to, value, data, 0]);
 		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);

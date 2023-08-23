@@ -30,11 +30,16 @@ export class BastionConnect extends Signer {
 	async init(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		this.smartWalletInstance = new SmartWallet();
 		this.externalProvider = externalProvider;
+
+		if (!options.apiKey) {
+			throw new Error("API Key is required");
+		}
+
 		this.options = options || {
 			privateKey: "",
 			rpcUrl: "",
 			chainId: 0,
-			apiKey: "",
+			apiKey: options.apiKey,
 		};
 		const chainId = options?.chainId || (await externalProvider.getNetwork()).chainId;
 
