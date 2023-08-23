@@ -9,15 +9,16 @@ import { ERC721_ABI } from "../../utils/ERC721_ABI";
 let smartWallet: SmartWallet;
 let walletConnected;
 let provider;
+let BastionSampleNFT = "0xb390e253e43171a11a6afcb04e340fde5ae1b0a1";
 
 const DEFAULT_CONFIG: BastionSignerOptions = {
 	privateKey: process.env.PRIVATE_KEY || "",
-	// rpcUrl: process.env.RPC_URL1 || "", //mumbai
-	// chainId: 80001,
+	rpcUrl: process.env.RPC_URL1 || "", //mumbai
+	chainId: 80001,
 	// rpcUrl: process.env.RPC_URL2 || "", // goerli
 	// chainId: 5,
-	rpcUrl: process.env.RPC_URL3 || "", //arb-goerli
-	chainId: 421613,
+	// rpcUrl: process.env.RPC_URL3 || "", //arb-goerli
+	// chainId: 421613,
 	apiKey: process.env.BASTION_API_KEY || "",
 };
 
@@ -112,7 +113,7 @@ describe("setupSmartAccount", () => {
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
 		//This contract is deployed on arb-goerli
-		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+		const contractAddress = BastionSampleNFT;
 		const contractABI = ["function safeMint(address to) public"];
 
 		const address = await bastionConnect.getAddress();
@@ -132,7 +133,7 @@ describe("setupSmartAccount", () => {
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
 		//This contract is deployed on arb-goerli
-		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+		const contractAddress = BastionSampleNFT;
 		const contractABI = ["function safeMint(address to) public"];
 
 		const address = await bastionConnect.getAddress();
@@ -142,7 +143,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
+	it("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
 		let bastionConnect = new BastionConnect();
 
 		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
@@ -154,19 +155,19 @@ describe("setupSmartAccount", () => {
 		const fromAddress = await bastionConnect.getAddress();
 
 		//This contract is deployed on arb-goerli
-		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+		const contractAddress = BastionSampleNFT;
 		const erc721Contract = new ethers.Contract(contractAddress, ERC721_ABI, bastionConnect);
 
 		const transfer1 = {
 			to: contractAddress,
 			value: 0,
-			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 50]),
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 0]),
 		};
 
 		const transfer2 = {
 			to: contractAddress,
 			value: 0,
-			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 52]),
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 1]),
 		};
 
 		const transactionArray = [transfer1, transfer2];
@@ -179,7 +180,7 @@ describe("setupSmartAccount", () => {
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
 		//This contract is deployed on arb-goerli
-		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+		const contractAddress = BastionSampleNFT;
 		const contractABI = ["function safeMint(address to) public"];
 
 		const address = await bastionConnect.getAddress();
@@ -187,6 +188,8 @@ describe("setupSmartAccount", () => {
 
 		const res = await nftContract.safeMint(address);
 		console.log("res = ", res);
+		// Sleep for 2 sec
+		await new Promise((r) => setTimeout(r, 2000));
 		const txnHash = await bastionConnect.getTransactionHash(res.hash);
 		expect(txnHash).toHaveLength(66);
 	}, 70000);

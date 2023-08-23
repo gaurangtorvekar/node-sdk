@@ -8,7 +8,8 @@ import { BastionSignerOptions } from "../bastionConnect";
 export class SmartWallet {
 	ECDSAKernelFactory_Address = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-	BATCH_ACTIONS_EXECUTOR = "0xF3F98574AC89220B5ae422306dC38b947901b421";
+	// BATCH_ACTIONS_EXECUTOR = "0xF3F98574AC89220B5ae422306dC38b947901b421";
+	BATCH_ACTIONS_EXECUTOR = "0xaEA978bAa9357C7d2B3B2D243621B94ce3d5793F";
 	VALIDATOR_ADDRESS = "0x180D6465F921C7E0DEA0040107D342c87455fFF5";
 	//TO DO: CHANGE BEFORE DEPLOYMENT
 	BASE_API_URL = "http://localhost:3000";
@@ -65,6 +66,7 @@ export class SmartWallet {
 
 		// First get the execution details from kernerlAccount
 		const executionDetails = await kernelAccount.getExecution(funcSignature);
+		console.log("Inside checkExecutionSet | Execution details: ", executionDetails);
 		// Only set the execution if it hasn't been set already
 		if (executionDetails[0] === 0) {
 			// Valid until 2030
