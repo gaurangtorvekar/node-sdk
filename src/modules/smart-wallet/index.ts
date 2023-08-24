@@ -5,15 +5,21 @@ import axios from "axios";
 import { ECDSAKernelFactory__factory, Kernel__factory, BatchActions__factory } from "./contracts";
 import { BastionSignerOptions } from "../bastionConnect";
 
+export interface SendTransactionResponse {
+	bundler: string;
+	bundlerURL: string;
+	chainId: number;
+	userOperationHash: string;
+}
+
 export class SmartWallet {
 	ECDSAKernelFactory_Address = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 	// BATCH_ACTIONS_EXECUTOR = "0xF3F98574AC89220B5ae422306dC38b947901b421";
 	BATCH_ACTIONS_EXECUTOR = "0xaEA978bAa9357C7d2B3B2D243621B94ce3d5793F";
 	VALIDATOR_ADDRESS = "0x180D6465F921C7E0DEA0040107D342c87455fFF5";
-	//TO DO: CHANGE BEFORE DEPLOYMENT
-	BASE_API_URL = "http://localhost:3000";
-	SALT = 0;
+	BASE_API_URL = "https://api.bastionwallet.io";
+	SALT = 1;
 
 	async initParams(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		let signer;
@@ -221,7 +227,7 @@ export class SmartWallet {
 		}
 	}
 
-	async sendTransaction(externalProvider: JsonRpcProvider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<string> {
+	async sendTransaction(externalProvider: JsonRpcProvider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<SendTransactionResponse> {
 		try {
 			console.log("========== Sending transaction through bundler ==========");
 			const headers = {
