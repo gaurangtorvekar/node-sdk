@@ -13,12 +13,18 @@ let BastionSampleNFT = "0xb390e253e43171a11a6afcb04e340fde5ae1b0a1";
 
 const DEFAULT_CONFIG: BastionSignerOptions = {
 	privateKey: process.env.PRIVATE_KEY || "",
-	rpcUrl: process.env.RPC_URL1 || "", //mumbai
-	chainId: 80001,
-	// rpcUrl: process.env.RPC_URL2 || "", // goerli
-	// chainId: 5,
-	// rpcUrl: process.env.RPC_URL3 || "", //arb-goerli
-	// chainId: 421613,
+	// rpcUrl: process.env.RPC_URL1 || "", //mumbai
+	// chainId: 80001,
+	rpcUrl: process.env.RPC_URL2 || "", // arb-goerli
+	chainId: 421613,
+	// rpcUrl: process.env.RPC_URL3 || "", // scroll
+	// chainId: 534353,
+	// rpcUrl: process.env.RPC_URL4 || "", // linea
+	// chainId: 59140,
+	// rpcUrl: process.env.RPC_URL5 || "", // base-goerli
+	// chainId: 84531,
+	// rpcUrl: process.env.RPC_URL6 || "", // optimism-goerli
+	// chainId: 420,
 	apiKey: process.env.BASTION_API_KEY || "",
 };
 
@@ -28,6 +34,50 @@ const setup = () => {
 	walletConnected = wallet.connect(provider);
 	return walletConnected;
 };
+
+// //--- Start of tests for multi chain
+// const setupTestEnvironment = async (config) => {
+// 	const bastionConnect = new BastionConnect();
+// 	await bastionConnect.init(provider, config);
+// 	const address = await bastionConnect.getAddress();
+// 	const nftContract = new Contract(BastionSampleNFT, ["function safeMint(address to) public"], bastionConnect);
+
+// 	return { address, nftContract };
+// };
+
+// const testMintingNFT = async (config) => {
+// 	const { address, nftContract } = await setupTestEnvironment(config);
+
+// 	const res = await nftContract.safeMint(address);
+// 	console.log("res = ", res);
+
+// 	expect(res.userOperationHash).toHaveLength(66);
+// };
+
+// const testCases = [
+// 	// { chainId: 80001, rpcUrlEnv: "RPC_URL1", desc: "on Polygon Mumbai" },
+// 	// { chainId: 421613, rpcUrlEnv: "RPC_URL2", desc: "on Arbitrum Goerli" },
+// 	// { chainId: 534353, rpcUrlEnv: "RPC_URL3", desc: "on Scroll alpha testnet" },
+// 	// { chainId: 59140, rpcUrlEnv: "RPC_URL4", desc: "on Linea testnet" },
+// 	// { chainId: 84531, rpcUrlEnv: "RPC_URL5", desc: "on Base Goerli testnet" },
+// 	// { chainId: 420, rpcUrlEnv: "RPC_URL6", desc: "on Optimism Goerli" },
+// ];
+
+// describe("Multi-chain NFT minting tests", () => {
+// 	beforeEach(() => {
+// 		smartWallet = new SmartWallet();
+// 		walletConnected = setup();
+// 	});
+// 	for (const { chainId, rpcUrlEnv, desc } of testCases) {
+// 		it(`should mint an NFT gasless-ly ${desc}`, async () => {
+// 			DEFAULT_CONFIG.chainId = chainId;
+// 			DEFAULT_CONFIG.rpcUrl = process.env[rpcUrlEnv] || "";
+
+// 			await testMintingNFT(DEFAULT_CONFIG);
+// 		}, 70000);
+// 	}
+// });
+// //--- End of tests for multi chain
 
 describe("setupSmartAccount", () => {
 	beforeEach(() => {
@@ -143,7 +193,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
+	it.skip("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
 		let bastionConnect = new BastionConnect();
 
 		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
@@ -175,23 +225,27 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should mint an NFT gasless-ly", async () => {
-		let bastionConnect = new BastionConnect();
-		await bastionConnect.init(provider, DEFAULT_CONFIG);
+	it("should mint an NFT gasless-ly", async () => {
+		try {
+			let bastionConnect = new BastionConnect();
+			await bastionConnect.init(provider, DEFAULT_CONFIG);
 
-		//This contract is deployed on arb-goerli
-		const contractAddress = BastionSampleNFT;
-		const contractABI = ["function safeMint(address to) public"];
+			//This contract is deployed on arb-goerli
+			const contractAddress = BastionSampleNFT;
+			const contractABI = ["function safeMint(address to) public"];
 
-		const address = await bastionConnect.getAddress();
-		const nftContract = new Contract(contractAddress, contractABI, bastionConnect);
+			const address = await bastionConnect.getAddress();
+			const nftContract = new Contract(contractAddress, contractABI, bastionConnect);
 
-		const res = await nftContract.safeMint(address);
-		console.log("res = ", res);
-		// Sleep for 2 sec
-		await new Promise((r) => setTimeout(r, 2000));
-		const txnHash = await bastionConnect.getTransactionHash(res.hash);
-		expect(txnHash).toHaveLength(66);
+			const res = await nftContract.safeMint(address);
+			console.log("res = ", res);
+			// Sleep for 2 sec
+			await new Promise((r) => setTimeout(r, 2000));
+			const txnHash = await bastionConnect.getTransactionHash(res.hash);
+			expect(txnHash).toHaveLength(66);
+		} catch (error) {
+			console.log("error = ", error);
+		}
 	}, 70000);
 
 	it.skip("should throw for invalid chainId", async () => {

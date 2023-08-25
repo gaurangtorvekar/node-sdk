@@ -11,7 +11,7 @@ let options: BastionSignerOptions;
 let entryPoint: EntryPoint;
 let chainId: number;
 let smartWallet: SmartWallet;
-const BASE_API_URL = "http://localhost:3000";
+const BASE_API_URL = "https://api.bastionwallet.io";
 const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 
 async function initParams(provider: JsonRpcProvider, options1?: BastionSignerOptions) {
@@ -32,38 +32,28 @@ async function initParams(provider: JsonRpcProvider, options1?: BastionSignerOpt
 	entryPoint = EntryPoint__factory.connect(ENTRY_POINT_ADDRESS, signer);
 }
 
-export async function createTransactionResponse(userOp1: UserOperationStruct, apiKey: string): Promise<TransactionResponse> {
+export async function createTransactionResponse(userOp1: UserOperationStruct, userOpHash: string, apiKey: string): Promise<TransactionResponse> {
 	const userOp = await resolveProperties(userOp1);
-	const userOpHash = await entryPoint.getUserOpHash(userOp);
 	try {
 		const headers = { "x-api-key": apiKey };
-		const getTransactionHash: TransactionReceipt = await axios.post(
-			`${BASE_API_URL}/v1/transaction/payment-sponsorship`,
-			{
-				chainId: chainId,
-				userOperation: userOp,
-			},
-			{ headers }
-		);
-
-		let nonce = BigNumber.from(userOp.nonce);
+		const axiosResponse = await axios.get(`${BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
+		const transactionReceipt = axiosResponse.data; // Extract the actual data
 
 		return {
 			hash: userOpHash,
-			confirmations: 0,
 			from: userOp.sender,
-			nonce: nonce.toNumber(),
+			confirmations: 0,
+			nonce: BigNumber.from(userOp.nonce).toNumber(),
 			gasLimit: BigNumber.from(userOp.callGasLimit),
 			value: BigNumber.from(0),
 			data: hexValue(userOp.callData),
 			chainId: chainId,
-			wait: async (confirmations?: number): Promise<TransactionReceipt> => {
-				const transactionReceipt = await getTransactionHash;
+			wait: async (): Promise<TransactionReceipt> => {
 				return transactionReceipt;
 			},
 		};
 	} catch (e) {
-		console.log("error::createTransactionResponse", e);
+		console.log("error::createTransactionResponse", e.data.message);
 	}
 }
 
@@ -92,9 +82,10 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
 		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-
 		console.log("Response of send transaction: ", res);
-		return await createTransactionResponse(signedUserOperation, options?.apiKey || "");
+
+		await new Promise((resolve) => setTimeout(resolve, 5000));
+		return await createTransactionResponse(signedUserOperation, res.userOperationHash, options?.apiKey || "");
 	} catch (error) {
 		console.error("Error in batchTransactionRouting:", error.message);
 		throw new Error(`batchTransactionRouting error: ${error.message}`);
@@ -126,7 +117,8 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
 		console.log("Response of send transaction: ", res);
 
-		return await createTransactionResponse(signedUserOperation, options?.apiKey || "");
+		await new Promise((resolve) => setTimeout(resolve, 5000));
+		return await createTransactionResponse(signedUserOperation, res.userOperationHash, options?.apiKey || "");
 	} catch (error) {
 		console.error("Error in transactionRouting:", error.message);
 		throw new Error(`transactionRouting error: ${error.message}`);
