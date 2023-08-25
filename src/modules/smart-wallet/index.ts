@@ -15,11 +15,10 @@ export interface SendTransactionResponse {
 export class SmartWallet {
 	ECDSAKernelFactory_Address = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-	// BATCH_ACTIONS_EXECUTOR = "0xF3F98574AC89220B5ae422306dC38b947901b421";
 	BATCH_ACTIONS_EXECUTOR = "0xaEA978bAa9357C7d2B3B2D243621B94ce3d5793F";
 	VALIDATOR_ADDRESS = "0x180D6465F921C7E0DEA0040107D342c87455fFF5";
 	BASE_API_URL = "https://api.bastionwallet.io";
-	SALT = 1;
+	SALT = 0;
 
 	async initParams(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		let signer;
@@ -56,7 +55,6 @@ export class SmartWallet {
 				},
 				{ headers }
 			);
-			console.log("Deployed Smart Wallet - ", response.data?.data?.createAccountResponse);
 			return false;
 		} else {
 			return true;
@@ -72,7 +70,6 @@ export class SmartWallet {
 
 		// First get the execution details from kernerlAccount
 		const executionDetails = await kernelAccount.getExecution(funcSignature);
-		console.log("Inside checkExecutionSet | Execution details: ", executionDetails);
 		// Only set the execution if it hasn't been set already
 		if (executionDetails[0] === 0) {
 			// Valid until 2030
@@ -104,7 +101,6 @@ export class SmartWallet {
 
 			// Check execution details again for sanity
 			const executionDetails = await kernelAccount.getExecution(funcSignature);
-			console.log("Inside checkExecutionSet | Execution details set: ", executionDetails);
 		}
 	}
 
@@ -131,15 +127,14 @@ export class SmartWallet {
 			nonce: utils.hexlify(nonce),
 			initCode: "0x",
 			callData,
-			callGasLimit: utils.hexlify(150_000),
-			verificationGasLimit: utils.hexlify(500_000),
-			preVerificationGas: utils.hexlify(100_000),
+			callGasLimit: utils.hexlify(250_000),
+			verificationGasLimit: utils.hexlify(600_000),
+			preVerificationGas: utils.hexlify(200_000),
 			maxFeePerGas: utils.hexlify(gasPrice),
 			maxPriorityFeePerGas: utils.hexlify(gasPrice),
 			paymasterAndData: "0x",
 			signature: "0x",
 		};
-		console.log("Inside prepareTransaction | Prepared user operation: ", userOperation);
 		return userOperation;
 	}
 
@@ -175,7 +170,6 @@ export class SmartWallet {
 			paymasterAndData: "0x",
 			signature: "0x",
 		};
-		console.log("Inside prepareBatchTransaction | Prepared user operation: ", userOperation);
 		return userOperation;
 	}
 
@@ -186,8 +180,6 @@ export class SmartWallet {
 		const padding = "0x00000000";
 		const signatureWithPadding = utils.hexConcat([padding, signature]);
 		userOperation.signature = signatureWithPadding;
-
-		console.log("Inside signUserOperation | Signed user Operation: ", userOperation);
 
 		return userOperation;
 	}
@@ -203,7 +195,6 @@ export class SmartWallet {
 			const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload, { headers });
 			const updatedUserOperation = response?.data?.data?.paymasterDataResponse?.userOperation;
 
-			console.log("Inside getSponsorship | Sponsored user operation: ", updatedUserOperation);
 			return updatedUserOperation;
 		} catch (e) {
 			console.log("Error from getSponsorship api call: ", e.response.data);
@@ -256,7 +247,6 @@ export class SmartWallet {
 			};
 			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
 			const trxReceipt = response?.data.data.trxReceipt.receipt.transactionHash;
-			console.log("Inside getTransactionReceiptByUserOpHash | Transaction hash:", trxReceipt);
 			return trxReceipt;
 		} catch (e) {
 			console.log("Error from getTransactionReceiptByUserOpHash api call: ", e.message);

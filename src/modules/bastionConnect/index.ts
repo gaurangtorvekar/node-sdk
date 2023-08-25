@@ -4,6 +4,7 @@ import { ethers, Signer } from "ethers";
 import { SmartWallet } from "../smart-wallet";
 import { transactionRouting, batchTransactionRouting, getTransactionHash } from "../../helpers/signerHelper";
 import { checkChainCompatibility } from "../../helper";
+import axios from "axios";
 
 export interface BastionSignerOptions {
 	privateKey: string;
@@ -26,14 +27,23 @@ export class BastionConnect extends Signer {
 	externalProvider: JsonRpcProvider;
 	options: BastionSignerOptions;
 	smartWalletInstance: SmartWallet;
+	BASE_API_URL = "https://api.bastionwallet.io";
 
 	async init(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		this.smartWalletInstance = new SmartWallet();
 		this.externalProvider = externalProvider;
 
+		const chainId = options?.chainId || (await externalProvider.getNetwork()).chainId;
+
 		if (!options.apiKey) {
 			throw new Error("API Key is required");
 		}
+
+		// const headers = {
+		// 	"x-api-key": options.apiKey,
+		// };
+		// const keyIsValid = await axios.get(`${this.BASE_API_URL}/v1/auth/validate-key/${options.apiKey}`, { headers });
+		// console.log("keyIsValid", keyIsValid.data);
 
 		this.options = options || {
 			privateKey: "",
@@ -41,7 +51,6 @@ export class BastionConnect extends Signer {
 			chainId: 0,
 			apiKey: options.apiKey,
 		};
-		const chainId = options?.chainId || (await externalProvider.getNetwork()).chainId;
 
 		//Check whether the SDK supports this chain
 		await checkChainCompatibility(chainId);
