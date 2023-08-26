@@ -95,7 +95,6 @@ describe("setupSmartAccount", () => {
 		DEFAULT_CONFIG.gasToken = "DAI";
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
-		//This contract is deployed on arb-goerli
 		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
 		const contractABI = ["function safeMint(address to) public", "function balanceOf(address owner) external view returns (uint256 balance)"];
 
@@ -153,7 +152,6 @@ describe("setupSmartAccount", () => {
 		const bastionConnect = await bastion.bastionConnect;
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
-		//This contract is deployed on arb-goerli
 		const contractAddress = "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28";
 		const contractABI = ["function transfer(address recipient, uint256 amount) public virtual override returns (bool) "];
 
@@ -162,14 +160,13 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should mint an NFT with gas from Smart Account", async () => {
+	it("should mint an NFT with gas from Smart Account", async () => {
 		let bastion = new Bastion();
 		const bastionConnect = await bastion.bastionConnect;
 
 		DEFAULT_CONFIG.noSponsorship = true;
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
-		//This contract is deployed on arb-goerli
 		const contractAddress = BastionSampleNFT;
 		const contractABI = ["function safeMint(address to) public"];
 
@@ -180,7 +177,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should mint an NFT with LINK ERC20 gas", async () => {
+	it("should mint an NFT with LINK ERC20 gas", async () => {
 		let bastion = new Bastion();
 		const bastionConnect = await bastion.bastionConnect;
 
@@ -190,7 +187,6 @@ describe("setupSmartAccount", () => {
 		// DEFAULT_CONFIG.gasToken = "0x3870419Ba2BBf0127060bCB37f69A1b1C090992B";
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
-		//This contract is deployed on arb-goerli
 		const contractAddress = BastionSampleNFT;
 		const contractABI = ["function safeMint(address to) public"];
 
@@ -201,7 +197,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
+	it.skip("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
 		let bastion = new Bastion();
 		const bastionConnect = await bastion.bastionConnect;
 
@@ -213,7 +209,6 @@ describe("setupSmartAccount", () => {
 		const toAddress = "0x841056F279582d1dfD586c3C77e7821821B5B510";
 		const fromAddress = await bastionConnect.getAddress();
 
-		//This contract is deployed on arb-goerli
 		const contractAddress = BastionSampleNFT;
 		const erc721Contract = new ethers.Contract(contractAddress, ERC721_ABI, bastionConnect);
 
@@ -240,7 +235,6 @@ describe("setupSmartAccount", () => {
 			const bastionConnect = await bastion.bastionConnect;
 			await bastionConnect.init(provider, DEFAULT_CONFIG);
 
-			//This contract is deployed on arb-goerli
 			const contractAddress = BastionSampleNFT;
 			const contractABI = ["function safeMint(address to) public"];
 

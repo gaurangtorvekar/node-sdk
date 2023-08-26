@@ -34,8 +34,6 @@ export class SmartWallet {
 		const signerAddress = await signer.getAddress();
 		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
 
-		console.log("Inside initParams | Smart Account Address: ", smartAccountAddress);
-
 		return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress };
 	}
 
@@ -186,7 +184,6 @@ export class SmartWallet {
 
 	private async getSponsorship(apiKey: string, chainId: number, userOperation: aaContracts.UserOperationStruct, endpoint: string, erc20Token?: string): Promise<aaContracts.UserOperationStruct> {
 		try {
-			console.log("========== Calling Pimlico Paymaster to sponsor gas ==========");
 			const payload = { chainId, userOperation };
 			if (erc20Token) payload["erc20Token"] = erc20Token;
 			const headers = {
@@ -197,8 +194,7 @@ export class SmartWallet {
 
 			return updatedUserOperation;
 		} catch (e) {
-			console.log("Error from getSponsorship api call: ", e.response.data);
-			throw e;
+			throw new Error(`Error while getting sponsorship, reason: ${e.message}`);
 		}
 	}
 
@@ -220,7 +216,6 @@ export class SmartWallet {
 
 	async sendTransaction(externalProvider: JsonRpcProvider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<SendTransactionResponse> {
 		try {
-			console.log("========== Sending transaction through bundler ==========");
 			const headers = {
 				"x-api-key": options.apiKey,
 			};
@@ -235,8 +230,7 @@ export class SmartWallet {
 			const sendTransactionResponse = response?.data.data.sendTransactionResponse;
 			return sendTransactionResponse;
 		} catch (e) {
-			console.log("Error from sendTransaction api call: ", e.response.data);
-			throw e;
+			throw new Error(`Error while sending transaction through the bundler, reason: ${e.message}`);
 		}
 	}
 
@@ -249,8 +243,7 @@ export class SmartWallet {
 			const trxReceipt = response?.data.data.trxReceipt.receipt.transactionHash;
 			return trxReceipt;
 		} catch (e) {
-			console.log("Error from getTransactionReceiptByUserOpHash api call: ", e.message);
-			return e.message;
+			throw new Error(`Error while getting transaction receipt by user operation hash, reason: ${e.message}`);
 		}
 	}
 }

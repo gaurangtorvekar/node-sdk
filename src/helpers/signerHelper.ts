@@ -7,15 +7,24 @@ import { TransactionReceipt } from "@ethersproject/abstract-provider";
 import axios from "axios";
 import { BastionSignerOptions, BasicTransaction } from "../modules/bastionConnect";
 
+const BASE_API_URL = "https://api.bastionwallet.io";
+const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+
 let options: BastionSignerOptions;
 let entryPoint: EntryPoint;
 let chainId: number;
 let smartWallet: SmartWallet;
-const BASE_API_URL = "https://api.bastionwallet.io";
-const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+let initialized = false;
 
-async function initParams(provider: JsonRpcProvider, options1?: BastionSignerOptions) {
-	options = options1;
+async function initializeIfNeeded(provider: JsonRpcProvider, newOptions?: BastionSignerOptions) {
+	if (!initialized || options !== newOptions) {
+		await initParams(provider, newOptions);
+		initialized = true;
+	}
+}
+
+async function initParams(provider: JsonRpcProvider, newOptions?: BastionSignerOptions) {
+	options = newOptions;
 	smartWallet = new SmartWallet();
 	let signer;
 
@@ -53,13 +62,13 @@ export async function createTransactionResponse(userOp1: UserOperationStruct, us
 			},
 		};
 	} catch (e) {
-		console.log("error::createTransactionResponse", e.data.message);
+		throw new Error(`createTransactionResponse error: ${e.data.message}`);
 	}
 }
 
 export async function batchTransactionRouting(provider: JsonRpcProvider, transactions: BasicTransaction[], options?: BastionSignerOptions): Promise<TransactionResponse> {
 	try {
-		await initParams(provider, options);
+		await initializeIfNeeded(provider, options);
 
 		const to: string[] = [];
 		const value: number[] = [];
@@ -82,7 +91,6 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
 		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-		console.log("Response of send transaction: ", res);
 
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		return await createTransactionResponse(signedUserOperation, res.userOperationHash, options?.apiKey || "");
@@ -94,8 +102,7 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 
 export async function transactionRouting(provider: JsonRpcProvider, transaction: Deferrable<TransactionRequest>, options?: BastionSignerOptions): Promise<TransactionResponse> {
 	try {
-		await initParams(provider, options);
-
+		await initializeIfNeeded(provider, options);
 		const transactionDefaults = {
 			value: 0,
 			data: "0x",
@@ -115,7 +122,6 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
 
 		const res = await smartWallet.sendTransaction(provider, signedUserOperation, options);
-		console.log("Response of send transaction: ", res);
 
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		return await createTransactionResponse(signedUserOperation, res.userOperationHash, options?.apiKey || "");
@@ -127,7 +133,7 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 
 export async function getTransactionHash(provider: JsonRpcProvider, userOpHash: string, options?: BastionSignerOptions): Promise<string> {
 	try {
-		await initParams(provider, options);
+		await initializeIfNeeded(provider, options);
 		const chainId = options?.chainId ? options.chainId : (await provider.getNetwork()).chainId;
 		const transactionHash = await smartWallet.getTransactionReceiptByUserOpHash(userOpHash, chainId, options?.apiKey || "");
 		return transactionHash;
