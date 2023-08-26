@@ -22,51 +22,43 @@ export interface BasicTransaction {
 }
 
 export class BastionConnect extends Signer {
-	signer: Signer;
-	address: string;
-	externalProvider: JsonRpcProvider;
-	options: BastionSignerOptions;
-	smartWalletInstance: SmartWallet;
-	BASE_API_URL = "https://api.bastionwallet.io";
+	private BASE_API_URL = "https://api.bastionwallet.io";
 
-	async init(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
-		this.smartWalletInstance = new SmartWallet();
-		this.externalProvider = externalProvider;
-
-		const chainId = options?.chainId || (await externalProvider.getNetwork()).chainId;
-
-		if (!options.apiKey) {
-			throw new Error("API Key is required");
-		}
-
-		// const headers = {
-		// 	"x-api-key": options.apiKey,
-		// };
-		// const keyIsValid = await axios.get(`${this.BASE_API_URL}/v1/auth/validate-key/${options.apiKey}`, { headers });
-		// console.log("keyIsValid", keyIsValid.data);
-
-		this.options = options || {
-			privateKey: "",
-			rpcUrl: "",
-			chainId: 0,
-			apiKey: options.apiKey,
-		};
-
-		//Check whether the SDK supports this chain
-		await checkChainCompatibility(chainId);
-	}
+	private signer: Signer;
+	private address: string;
+	private externalProvider: JsonRpcProvider;
+	private smartWalletInstance: SmartWallet;
+	private options: BastionSignerOptions;
 
 	constructor() {
 		super();
 	}
 
+	private async validateApiKey(apiKey?: string): Promise<void> {
+		if (!apiKey) {
+			throw new Error("API Key is required");
+		}
+
+		const response = await axios.get(`${this.BASE_API_URL}/v1/auth/validate-key/${apiKey}`);
+		if (!response.data.data.isValid) {
+			throw new Error("Invalid API Key");
+		}
+	}
+
+	async init(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
+		await this.validateApiKey(options?.apiKey);
+
+		const chainId = options?.chainId || (await externalProvider.getNetwork()).chainId;
+		await checkChainCompatibility(chainId);
+
+		this.smartWalletInstance = new SmartWallet();
+		this.externalProvider = externalProvider;
+		this.options = { ...options, chainId };
+	}
+
 	async getAddress(): Promise<string> {
 		const { smartAccountAddress } = await this.smartWalletInstance.initParams(this.externalProvider, this.options);
 		return smartAccountAddress;
-	}
-
-	async signMessage(message: string | ethers.utils.Bytes): Promise<string> {
-		return this.signer.signMessage(message);
 	}
 
 	async getSigner(): Promise<Signer> {
@@ -75,6 +67,10 @@ export class BastionConnect extends Signer {
 
 	async getTransactionCount(block?: string | number): Promise<number> {
 		return this.signer.getTransactionCount(block);
+	}
+
+	async signMessage(message: string | ethers.utils.Bytes): Promise<string> {
+		return this.signer.signMessage(message);
 	}
 
 	async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {

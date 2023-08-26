@@ -1,6 +1,7 @@
 import { ethers, Contract } from "ethers";
 import { SmartWallet } from "../../../src/modules/smart-wallet";
-import { BastionConnect, BastionSignerOptions } from "../../../src/modules/bastionConnect";
+import { BastionSignerOptions } from "../../../src/modules/bastionConnect";
+import { Bastion } from "../../../src/index";
 import { EntryPoint__factory } from "@account-abstraction/contracts";
 import { describe, beforeEach, it, expect } from "@jest/globals";
 import { skip } from "node:test";
@@ -87,7 +88,8 @@ describe("setupSmartAccount", () => {
 	const expectedAddress = "0xB730d07F4c928AD9e72B59AB99d22cB87BE9A867"; // replace with actual expected address
 
 	it.skip("should call a Smart Contract function gasless for ERC20 gas", async () => {
-		let bastionConnect = new BastionConnect();
+		let bastion = new Bastion();
+		const bastionConnect = await bastion.bastionConnect;
 
 		//Pass along a gasToken to use for gas
 		DEFAULT_CONFIG.gasToken = "DAI";
@@ -105,7 +107,8 @@ describe("setupSmartAccount", () => {
 	}, 70000);
 
 	it.skip("should send native currency to another address gasless", async () => {
-		let bastionConnect = new BastionConnect();
+		let bastion = new Bastion();
+		const bastionConnect = await bastion.bastionConnect;
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
 		console.log("My address = ", await bastionConnect.getAddress());
@@ -118,7 +121,8 @@ describe("setupSmartAccount", () => {
 	}, 50000);
 
 	it.skip("should send native currency to another address gasless", async () => {
-		let bastionConnect = new BastionConnect();
+		let bastion = new Bastion();
+		const bastionConnect = await bastion.bastionConnect;
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
 		const res = await bastionConnect.sendTransaction({
@@ -129,7 +133,8 @@ describe("setupSmartAccount", () => {
 	}, 50000);
 
 	it.skip("should withdraw from entry point", async () => {
-		let bastionConnect = new BastionConnect();
+		let bastion = new Bastion();
+		const bastionConnect = await bastion.bastionConnect;
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
 		const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
@@ -144,7 +149,8 @@ describe("setupSmartAccount", () => {
 	}, 70000);
 
 	it.skip("should send test LINK tokens gasless", async () => {
-		let bastionConnect = new BastionConnect();
+		let bastion = new Bastion();
+		const bastionConnect = await bastion.bastionConnect;
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 
 		//This contract is deployed on arb-goerli
@@ -157,7 +163,8 @@ describe("setupSmartAccount", () => {
 	}, 70000);
 
 	it.skip("should mint an NFT with gas from Smart Account", async () => {
-		let bastionConnect = new BastionConnect();
+		let bastion = new Bastion();
+		const bastionConnect = await bastion.bastionConnect;
 
 		DEFAULT_CONFIG.noSponsorship = true;
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
@@ -174,7 +181,8 @@ describe("setupSmartAccount", () => {
 	}, 70000);
 
 	it.skip("should mint an NFT with LINK ERC20 gas", async () => {
-		let bastionConnect = new BastionConnect();
+		let bastion = new Bastion();
+		const bastionConnect = await bastion.bastionConnect;
 
 		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
 		// Stackup Test ERC20 gas token  = 0x3870419Ba2BBf0127060bCB37f69A1b1C090992B
@@ -193,8 +201,9 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
-		let bastionConnect = new BastionConnect();
+	it("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
+		let bastion = new Bastion();
+		const bastionConnect = await bastion.bastionConnect;
 
 		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
 		// Stackup Test ERC20 gas token  = 0x3870419Ba2BBf0127060bCB37f69A1b1C090992B
@@ -227,7 +236,8 @@ describe("setupSmartAccount", () => {
 
 	it("should mint an NFT gasless-ly", async () => {
 		try {
-			let bastionConnect = new BastionConnect();
+			let bastion = new Bastion();
+			const bastionConnect = await bastion.bastionConnect;
 			await bastionConnect.init(provider, DEFAULT_CONFIG);
 
 			//This contract is deployed on arb-goerli
@@ -249,7 +259,8 @@ describe("setupSmartAccount", () => {
 	}, 70000);
 
 	it.skip("should throw for invalid chainId", async () => {
-		let bastionConnect = new BastionConnect();
+		let bastion = new Bastion();
+		const bastionConnect = await bastion.bastionConnect;
 
 		DEFAULT_CONFIG.chainId = 1234;
 		await expect(bastionConnect.init(provider, DEFAULT_CONFIG)).rejects.toThrow("Chain not supported");
