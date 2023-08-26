@@ -49,20 +49,18 @@ const bastion = new Bastion();
 const bastionConnect = await bastion.bastionConnect;
 
 const CONFIG = {
-	chainId: <chain_id>,
-	privateKey: <your_private_key>,
-	rpcUrl: <RPC_URL>,
+	apiKey: <bastion_api_key>
 };
 bastionConnect.init(<your_web3Provider>, CONFIG);
 ```
 
-For more detailed examples, check the [Demo Examples](https://github.com/bastion-wallet/demo-examples) repo.
+For detailed examples on how to use the SDK, check the [NextJS Demo App](https://github.com/bastion-wallet/nextjs-demo-app) starter template repo.
 
 ---
 
 ## Documentation
 
-Check out the comprehensive [Documentation](https://bastion-4.gitbook.io/bastion-sdk/) for more in-depth tutorials, API references, and more.
+Check out the comprehensive [Documentation](https://docs.bastionwallet.io) for more in-depth tutorials, API references, and more.
 
 ---
 
@@ -80,7 +78,7 @@ Bastion SDK is licensed under the [MIT License](/LICENSE).
 
 ## Support
 
-For general questions, join our [Discord Channel](https://discord.gg/your-discord-link) or for issues and feature requests, please open an [issue](https://github.com/bastion-wallet/sdk/issues).
+For general questions, you can reach out to us at info@indorse.io.
 
 ---
 

@@ -7,9 +7,9 @@ import { checkChainCompatibility } from "../../helper";
 import axios from "axios";
 
 export interface BastionSignerOptions {
-	privateKey: string;
-	rpcUrl: string;
-	chainId: number;
+	privateKey?: string;
+	rpcUrl?: string;
+	chainId?: number;
 	apiKey: string;
 	gasToken?: string;
 	noSponsorship?: boolean;
