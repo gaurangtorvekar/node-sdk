@@ -6,6 +6,7 @@ import { SmartWallet } from "../modules/smart-wallet";
 import { TransactionReceipt } from "@ethersproject/abstract-provider";
 import axios from "axios";
 import { BastionSignerOptions, BasicTransaction } from "../modules/bastionConnect";
+import { createDummyTransactionReceipt } from "../helper";
 
 const BASE_API_URL = "https://api.bastionwallet.io";
 const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
@@ -45,9 +46,9 @@ export async function createTransactionResponse(userOp1: UserOperationStruct, us
 	const userOp = await resolveProperties(userOp1);
 	try {
 		const headers = { "x-api-key": apiKey };
-		const axiosResponse = await axios.get(`${BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
-		const transactionReceipt = axiosResponse.data; // Extract the actual data
-
+		// const axiosResponse = await axios.get(`${BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
+		// const transactionReceipt = axiosResponse.data; // Extract the actual data
+		const transactionReceipt = createDummyTransactionReceipt();
 		return {
 			hash: userOpHash,
 			from: userOp.sender,

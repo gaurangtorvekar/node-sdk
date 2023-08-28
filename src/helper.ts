@@ -1,5 +1,6 @@
-//This function returns the chain names based on their Chain ID
-//You can find this reference here: https://docs.pimlico.io/reference/verifying-paymaster
+import { TransactionReceipt } from "@ethersproject/providers";
+import { BigNumber } from "ethers";
+
 export const getChainName = async (chainId) => {
 	switch (chainId) {
 		case 80001:
@@ -25,5 +26,27 @@ export const checkChainCompatibility = async (chainId) => {
 		throw new Error("Chain not supported");
 	}
 	return chainName;
+};
+
+export const createDummyTransactionReceipt = async () => {
+	const transactionReceipt: TransactionReceipt = {
+		to: "0x000000000000",
+		from: "0x0000000000",
+		contractAddress: "0x000000000000",
+		transactionIndex: 0,
+		gasUsed: BigNumber.from(0),
+		logsBloom: "0x000000000000",
+		blockHash: "0x000000000000",
+		transactionHash: "0x000000000000",
+		logs: [],
+		blockNumber: 0,
+		confirmations: 0,
+		cumulativeGasUsed: BigNumber.from(0),
+		effectiveGasPrice: BigNumber.from(0),
+		byzantium: false,
+		type: 0,
+	};
+
+	return transactionReceipt;
 };
 
