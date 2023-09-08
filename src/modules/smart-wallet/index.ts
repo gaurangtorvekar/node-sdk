@@ -103,7 +103,7 @@ export class SmartWallet {
 	}
 
 	async prepareTransaction(externalProvider: JsonRpcProvider, to: string, value: number, options?: BastionSignerOptions, data?: string): Promise<aaContracts.UserOperationStruct> {
-		const { smartAccountAddress, entryPoint, signerAddress } = await this.initParams(externalProvider, options);
+		const { smartAccountAddress, entryPoint, signerAddress, signer } = await this.initParams(externalProvider, options);
 		const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
 		// 0 = call, 1 = delegatecall (type of Operation)
@@ -119,7 +119,15 @@ export class SmartWallet {
 			nonce = 0;
 		} else {
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
-		}
+		}		
+
+		const dummySignature = utils.hexConcat([
+			"0x00000000",
+			await signer.signMessage(
+			  utils.arrayify(utils.keccak256("0xdead"))
+			),
+		])
+
 		const userOperation = {
 			sender: smartAccountAddress,
 			nonce: utils.hexlify(nonce),
@@ -131,7 +139,7 @@ export class SmartWallet {
 			maxFeePerGas: utils.hexlify(gasPrice),
 			maxPriorityFeePerGas: utils.hexlify(gasPrice),
 			paymasterAndData: "0x",
-			signature: "0x",
+			signature: dummySignature, 
 		};
 		return userOperation;
 	}
@@ -194,7 +202,7 @@ export class SmartWallet {
 
 			return updatedUserOperation;
 		} catch (e) {
-			throw new Error(`Error while getting sponsorship, reason: ${e.message}`);
+			throw new Error(`Error while getting sponsorship, reason: ${e.response.data.message}`);
 		}
 	}
 
