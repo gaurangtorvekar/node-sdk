@@ -54,6 +54,11 @@ export class BastionConnect extends Signer {
 		this.smartWalletInstance = new SmartWallet();
 		this.externalProvider = externalProvider;
 		this.options = { ...options, chainId };
+
+		const { signer, smartAccountAddress } = await this.smartWalletInstance.initParams(this.externalProvider, this.options);
+		this.signer = signer;
+		
+		return smartAccountAddress;
 	}
 
 	async getAddress(): Promise<string> {

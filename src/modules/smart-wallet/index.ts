@@ -33,7 +33,7 @@ export class SmartWallet {
 		const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
 		const signerAddress = await signer.getAddress();
 		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
-
+		await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
 		return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress };
 	}
 
@@ -44,16 +44,20 @@ export class SmartWallet {
 		};
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
-			const response = await axios.post(
-				`${this.BASE_API_URL}/v1/transaction/create-account`,
-				{
-					chainId: chainId,
-					eoa: signerAddress,
-					salt: this.SALT,
-				},
-				{ headers }
-			);
-			return false;
+			try {
+				const response = await axios.post(
+					`${this.BASE_API_URL}/v1/transaction/create-account`,
+					{
+						chainId: chainId,
+						eoa: signerAddress,
+						salt: this.SALT,
+					},
+					{ headers }
+				);
+				return false;
+			} catch (error) {
+				return error;
+			}
 		} else {
 			return true;
 		}
