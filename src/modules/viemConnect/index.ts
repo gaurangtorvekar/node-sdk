@@ -1,70 +1,56 @@
-import type {
-    Abi, Address, Account, Client, Transport, Chain, GetChain, ContractFunctionConfig,
-    GetValue, Hex, EncodeFunctionDataParameters, FormattedTransactionRequest, SendTransactionReturnType
-} from "viem"
-import {encodeFunctionData} from 'viem';
-
-export type IsUndefined<T> = [undefined] extends [T] ? true : false
-
-export type UnionOmit<T, K extends keyof any> = T extends any
-  ? Omit<T, K>
-  : never
-
-export type GetAccountParameter<
-  TAccount extends Account | undefined = Account | undefined,
-> = IsUndefined<TAccount> extends true
-  ? { account: Account | Address }
-  : { account?: Account | Address }
-
-
-export type SendTransactionParameters<
-  TChain extends Chain | undefined = Chain | undefined,
-  TAccount extends Account | undefined = Account | undefined,
-  TChainOverride extends Chain | undefined = Chain | undefined,
-> = UnionOmit<
-  FormattedTransactionRequest<
-    TChainOverride extends Chain ? TChainOverride : TChain
-  >,
-  'from'
-> &
-  GetAccountParameter<TAccount> &
-  GetChain<TChain, TChainOverride>
-
-
-export type WriteContractParameters<
-    TAbi extends Abi | readonly unknown[] = Abi,
-    TFunctionName extends string = string,
-    TChain extends Chain | undefined = Chain,
-    TAccount extends Account | undefined = Account | undefined,
-    TChainOverride extends Chain | undefined = Chain | undefined,
-> = ContractFunctionConfig<TAbi, TFunctionName, 'payable' | 'nonpayable'> &
-    GetAccountParameter<TAccount> &
-    GetChain<TChain, TChainOverride> &
-    UnionOmit<
-        FormattedTransactionRequest<
-            TChainOverride extends Chain ? TChainOverride : TChain
-        >,
-        'from' | 'to' | 'data' | 'value'
-    > &
-    GetValue<
-        TAbi,
-        TFunctionName,
-        SendTransactionParameters<
-            TChain,
-            TAccount,
-            TChainOverride
-        > extends SendTransactionParameters
-        ? SendTransactionParameters<TChain, TAccount, TChainOverride>['value']
-        : SendTransactionParameters['value']
-    > & {
-        /** Data to append to the end of the calldata. Useful for adding a ["domain" tag](https://opensea.notion.site/opensea/Seaport-Order-Attributions-ec2d69bf455041a5baa490941aad307f). */
-        dataSuffix?: Hex
-    }
-
-export type WriteContractReturnType = SendTransactionReturnType
-
+import axios from "axios";
+import { SmartWallet } from "../smart-wallet";
+import type {Abi,  Account, Client, Transport, Chain, EncodeFunctionDataParameters} from "viem"
+import {encodeFunctionData, createPublicClient, http, createWalletClient, getAddress} from 'viem';
+import { privateKeyToAccount } from 'viem/accounts'
+import {WriteContractReturnType, WriteContractParameters} from './type'
+import {polygonMumbai} from 'viem/chains'
+import { checkChainCompatibility } from "../../helper";
+export interface BastionViemOptions {
+	privateKey?: string;
+	rpcUrl?: string;
+	chainId?: number;
+    chain?: Chain;
+	apiKey: string;
+	gasToken?: string;
+	noSponsorship?: boolean;
+}
 
 export class ViemConnect {
+
+    private BASE_API_URL = "https://api.bastionwallet.io";
+	private smartWalletInstance: SmartWallet;
+    private options: BastionViemOptions;
+    private client : any;
+    
+
+    private async validateApiKey(apiKey?: string): Promise<void> {
+		if (!apiKey) {
+			throw new Error("API Key is required");
+		}
+
+		const response = await axios.get(`${this.BASE_API_URL}/v1/auth/validate-key/${apiKey}`);
+		if (!response.data.data.isValid) {
+			throw new Error("Invalid API Key");
+		}
+	}
+
+
+    async init(options?: BastionViemOptions) {
+		await this.validateApiKey(options?.apiKey);
+
+		const chainId = options?.chainId ;
+		await checkChainCompatibility(chainId);
+		
+		this.options = { ...options, chainId };
+        const account = privateKeyToAccount(`0x${options?.privateKey}`);
+        this.client =  await createWalletClient({account,
+            chain: options?.chain || polygonMumbai, 
+           transport : http(options?.rpcUrl)})
+        
+    }
+
+
 
     async writeContract<
         TChain extends Chain | undefined,
@@ -99,5 +85,9 @@ export class ViemConnect {
         const hash = '0xyz';
         
         return hash
-        }
     }
+
+    async getAddress(address: string) {
+        return getAddress(address)
+    }
+}
