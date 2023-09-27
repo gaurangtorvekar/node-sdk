@@ -11,7 +11,7 @@ import { ethers } from 'ethers';
 import {abi} from "./ERC721ABI"  ;
  
 let smartWallet: SmartWallet;
-let client, publicClient;
+let client, publicClient, walletClient;
 let provider;
 let BastionSampleNFT = "0xb390e253e43171a11a6afcb04e340fde5ae1b0a1";
 let account;
@@ -34,7 +34,7 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 };
 const setup = () => {
     account = privateKeyToAccount(`0x${process.env.PRIVATE_KEY}`);
-    const client = createWalletClient({account,
+    walletClient = createWalletClient({account,
          chain: arbitrumGoerli, 
         transport : http(DEFAULT_CONFIG.rpcUrl)})
 
@@ -58,7 +58,7 @@ describe("setupSmartAccount", ()=> {
 		let bastion = new Bastion();
 		const BastionViem = await bastion.viemConnect;
 
-		const aaAddress = await BastionViem.init(client, DEFAULT_CONFIG);
+		const aaAddress = await BastionViem.init(publicClient, walletClient, DEFAULT_CONFIG);
 		const retaddr = await BastionViem.getAddress();
 		console.log("aa", aaAddress, retaddr)
 		const signature = await BastionViem.signMessage("hello world");
@@ -73,21 +73,21 @@ describe("setupSmartAccount", ()=> {
 		const BastionViem = await bastion.viemConnect;
 
 		//Pass along a gasToken to use for gas
-		const aaAddress = await BastionViem.init(client, DEFAULT_CONFIG);
+		const aaAddress = await BastionViem.init(publicClient,walletClient, DEFAULT_CONFIG);
 
-		// const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
 
-		// const { request } = await publicClient.simulateContract({
-		// 	account,
-		// 	address: contractAddress,
-		// 	abi: abi,
-		// 	functionName: 'safeMint',
-		// 	args: [aaAddress]
-		//   })
-		// console.log("req", request);
+		const { request } = await publicClient.simulateContract({
+			account,
+			address: contractAddress,
+			abi: abi,
+			functionName: 'safeMint',
+			args: [aaAddress]
+		  })
+		console.log("req", request);
 		  
-		// await BastionViem.writeContract(client,request);
-		// const res = true
+		await BastionViem.writeContract(client,request);
+		const res = true
 	}, 70000);
 
 
