@@ -1,11 +1,12 @@
 import axios from "axios";
 import { SmartWallet } from "../smart-wallet";
-import type {Abi,  Account, Client, Transport, Chain, EncodeFunctionDataParameters} from "viem"
+import type {Abi,  Account, Client, PublicClient, WalletClient, Transport, Chain, EncodeFunctionDataParameters, Hex, ByteArray} from "viem"
 import {encodeFunctionData, createPublicClient, http, createWalletClient, getAddress} from 'viem';
-import { privateKeyToAccount } from 'viem/accounts'
 import {WriteContractReturnType, WriteContractParameters} from './type'
-import {polygonMumbai} from 'viem/chains'
 import { checkChainCompatibility } from "../../helper";
+import { ethers } from "ethers";
+import { transactionRouting } from "../../helpers/viemHelper";
+import { SmartWalletViem } from "../smart-wallet/viemSmartWallet";
 export interface BastionViemOptions {
 	privateKey?: string;
 	rpcUrl?: string;
@@ -19,9 +20,10 @@ export interface BastionViemOptions {
 export class ViemConnect {
 
     private BASE_API_URL = "https://api.bastionwallet.io";
-	private smartWalletInstance: SmartWallet;
+	private smartWalletInstance: SmartWalletViem;
     private options: BastionViemOptions;
-    private client : any;
+    private publicClient : PublicClient;
+    private walletClient : WalletClient;
     
 
     private async validateApiKey(apiKey?: string): Promise<void> {
@@ -36,21 +38,27 @@ export class ViemConnect {
 	}
 
 
-    async init(options?: BastionViemOptions) {
+    async init(publicClient: PublicClient, walletClient: WalletClient, options?: BastionViemOptions) {
 		await this.validateApiKey(options?.apiKey);
-
 		const chainId = options?.chainId ;
 		await checkChainCompatibility(chainId);
 		
+        this.publicClient = publicClient;
+        this.smartWalletInstance = new SmartWalletViem();
 		this.options = { ...options, chainId };
-        const account = privateKeyToAccount(`0x${options?.privateKey}`);
-        this.client =  await createWalletClient({account,
-            chain: options?.chain || polygonMumbai, 
-           transport : http(options?.rpcUrl)})
-        
+
+		const {  smartAccountAddress } = await this.smartWalletInstance.initParams(walletClient, publicClient, this.options);
+        return smartAccountAddress;        
     }
 
+    async getAddress(): Promise<string> {
+		const { smartAccountAddress } = await this.smartWalletInstance.initParams(this.walletClient, this.publicClient, this.options);
+		return smartAccountAddress;
+	}
 
+    async signMessage(message: string | { raw: Hex | ByteArray }, account?: Account, ): Promise<string> {
+		return this.walletClient.signMessage({account, message});
+	}
 
     async writeContract<
         TChain extends Chain | undefined,
@@ -81,13 +89,18 @@ export class ViemConnect {
             functionName,
         } as unknown as EncodeFunctionDataParameters<TAbi, TFunctionName>)
 
+        const transaction = {
+            data: `${data}${dataSuffix ? dataSuffix.replace('0x', '') : ''}`,
+            to: address,
+            ...request
+          }
+        console.log("transaciton", transaction); 
+        const a = await transactionRouting(this.publicClient, this.walletClient, transaction, this.options);
+        console.log("a",a)
         // Write the transaction routing logic
         const hash = '0xyz';
         
         return hash
     }
 
-    async getAddress(address: string) {
-        return getAddress(address)
-    }
 }

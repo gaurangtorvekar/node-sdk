@@ -1,3 +1,4 @@
+import { type } from "os"
 import type {
     Abi, Address, Account, Chain, GetChain, ContractFunctionConfig,
     GetValue, Hex, FormattedTransactionRequest, SendTransactionReturnType
@@ -14,7 +15,6 @@ export type GetAccountParameter<
 > = IsUndefined<TAccount> extends true
   ? { account: Account | Address }
   : { account?: Account | Address }
-
 
 export type SendTransactionParameters<
   TChain extends Chain | undefined = Chain | undefined,
@@ -61,3 +61,18 @@ export type WriteContractParameters<
     }
 
 export type WriteContractReturnType = SendTransactionReturnType
+
+export type UserOperationStructViem = {
+	sender: `0x${string}`;
+	nonce: bigint;
+	initCode: `0x${string}`;
+	callData: `0x${string}`;
+	callGasLimit: bigint;
+	verificationGasLimit: bigint;
+	preVerificationGas: bigint;
+	maxFeePerGas: bigint;
+	maxPriorityFeePerGas: bigint;
+	paymasterAndData: `0x${string}`;
+	signature: `0x${string}`;
+};
+
