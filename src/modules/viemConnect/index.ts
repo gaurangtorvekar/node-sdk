@@ -44,6 +44,7 @@ export class ViemConnect {
 		await checkChainCompatibility(chainId);
 		
         this.publicClient = publicClient;
+        this.walletClient = walletClient;
         this.smartWalletInstance = new SmartWalletViem();
 		this.options = { ...options, chainId };
 

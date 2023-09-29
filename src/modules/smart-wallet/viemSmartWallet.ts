@@ -31,24 +31,28 @@ export class SmartWalletViem {
         const entryPoint = getContract({
 			address: this.ENTRY_POINT_ADDRESS as `0x${string}`,
 			abi: aaContracts.EntryPoint__factory.abi,
-			walletClient,
+			publicClient,
+			walletClient
 		})
 		// const entryPoint = aaContracts.EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, signer);
 
 		const kernelAccountFactory = getContract({
 			address: this.ECDSAKernelFactory_Address as `0x${string}`,
 			abi: ECDSAKernelFactory__factory.abi,
+			publicClient,
 			walletClient
 		})
+		console.log("in",kernelAccountFactory)
 		// const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
-		const accounts = await walletClient.getAddresses();
-		const clientAddress:`0x${string}` = accounts[0];
+		const clientAddress = walletClient.account.address;
+		console.log("clientAddress",clientAddress);
 		// const smartAccountAddress = publicClient.readContract({
 		// 	address: this.ECDSAKernelFactory_Address as `0x${string}`,
 		// 	abi: ECDSAKernelFactory__factory.abi,
 		// 	walletClient
 		// })
-		const smartAccountAddress: `0x${string}` = await kernelAccountFactory.read.getAccountAddress([clientAddress, BigInt(this.SALT)]);
+		const smartAccountAddress: `0x${string}` = await kernelAccountFactory.read.getAccountAddress([clientAddress, BigInt(this.SALT)])
+		console.log("smartAccountAddress",smartAccountAddress);
 		await this.initSmartAccount(smartAccountAddress, clientAddress, options.chainId, options.apiKey);
 		return { walletClient, publicClient, entryPoint, kernelAccountFactory, smartAccountAddress, clientAddress };
 	}
@@ -85,6 +89,7 @@ export class SmartWalletViem {
 		const kernelAccount = getContract({
 			address: smartAccountAddress,
 			abi: Kernel__factory.abi,
+			publicClient,
 			walletClient
 		})
 		// const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
@@ -104,7 +109,9 @@ export class SmartWalletViem {
 			const validAfter = timestamp;
 
 			// Encode packed owner address
-			const owner = (await walletClient.getAddresses())[0];
+			console.log("validAfter", validAfter)
+			const owner = walletClient.account.address;
+			console.log("owner:", owner);
 			const ownerSliced = owner.slice(2).padStart(40, "0");
 			const packedData = utils.arrayify("0x" + ownerSliced);
 
@@ -143,10 +150,10 @@ export class SmartWalletViem {
 
 	async prepareTransaction(publicClient: PublicClient, walletClient: WalletClient, to: `0x${string}`, value: number, options?: BastionSignerOptions, data?: `0x${string}`): Promise<aaContracts.UserOperationStruct> {
 		const { smartAccountAddress, entryPoint, clientAddress } = await this.initParams(walletClient, publicClient, options);
-		
 		const kernelAccount = getContract({
 			address: smartAccountAddress,
 			abi: Kernel__factory.abi,
+			publicClient,
 			walletClient
 		})
 		// const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
@@ -172,15 +179,15 @@ export class SmartWalletViem {
 		} else {
 			nonce = await entryPoint.read.getNonce([smartAccountAddress, BigInt(0)]);
 		}		
-
+		console.log("dummy bfe", walletClient);
 		const dummySignature = utils.hexConcat([
 			"0x00000000",
 			await walletClient.signMessage({
-				account: clientAddress,
-				message: utils.keccak256("0xdead")
-			}
-			),
+				account: walletClient.account,
+				message: {raw: utils.keccak256("0xdead") as `0x${string}`}
+			}),
 		])
+		console.log("dummy aft", dummySignature)
 
 		const userOperation = {
 			sender: smartAccountAddress,
@@ -204,6 +211,7 @@ export class SmartWalletViem {
 		const batchActions = getContract({
 			address: smartAccountAddress,
 			abi: BatchActions__factory.abi,
+			publicClient,
 			walletClient
 		})
 
@@ -247,10 +255,10 @@ export class SmartWalletViem {
 
 	async signUserOperation(publicClient: PublicClient, walletClient: WalletClient, userOperation: UserOperationStructViem, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
 		const { entryPoint, clientAddress } = await this.initParams(walletClient, publicClient, options);
-
+		console.log("clientadd", clientAddress);
 		const signature = await walletClient.signMessage({
-			account: clientAddress,
-			message: await entryPoint.read.getUserOpHash([userOperation])
+			account: walletClient.account,
+			message: { raw: await entryPoint.read.getUserOpHash([userOperation])}
 		});
 		const padding = "0x00000000";
 		const signatureWithPadding = utils.hexConcat([padding, signature]);

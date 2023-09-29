@@ -30,9 +30,10 @@ async function initParams(publicClient: PublicClient, walletClient: WalletClient
 	smartWallet = new SmartWalletViem();
 	chainId = publicClient.chain.id;
     entryPoint = getContract({
-			address: this.ENTRY_POINT_ADDRESS as `0x${string}`,
+			address: ENTRY_POINT_ADDRESS as `0x${string}`,
 			abi: EntryPoint__factory.abi,
-			walletClient,
+			publicClient,
+			walletClient
 	})
 	// entryPoint = EntryPoint__factory.connect(ENTRY_POINT_ADDRESS, signer);
 }

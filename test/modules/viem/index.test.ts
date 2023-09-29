@@ -32,17 +32,18 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 	// chainId: 420,
 	apiKey: process.env.BASTION_API_KEY || "",
 };
-const setup = () => {
+const setup = async() => {
     account = privateKeyToAccount(`0x${process.env.PRIVATE_KEY}`);
-    walletClient = createWalletClient({account,
+	console.log("account pv", account);
+    walletClient = createWalletClient({
+		 account,
          chain: arbitrumGoerli, 
-        transport : http(DEFAULT_CONFIG.rpcUrl)})
-
+        transport : http(DEFAULT_CONFIG.rpcUrl)
+	})
 	publicClient = createPublicClient({
 		chain: arbitrumGoerli,
 		transport : http(DEFAULT_CONFIG.rpcUrl),
 	  });
-	  console.log(client, publicClient )
 	return client;
 
 };	
@@ -71,7 +72,6 @@ describe("setupSmartAccount", ()=> {
     it("should call a Smart Contract function gasless for ERC20 gas", async () => {
 		let bastion = new Bastion();
 		const BastionViem = await bastion.viemConnect;
-
 		//Pass along a gasToken to use for gas
 		const aaAddress = await BastionViem.init(publicClient,walletClient, DEFAULT_CONFIG);
 
@@ -84,7 +84,6 @@ describe("setupSmartAccount", ()=> {
 			functionName: 'safeMint',
 			args: [aaAddress]
 		  })
-		console.log("req", request);
 		  
 		await BastionViem.writeContract(client,request);
 		const res = true
