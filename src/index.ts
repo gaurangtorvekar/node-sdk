@@ -1,12 +1,9 @@
-// import { SmartWallet } from "./modules/smart-wallet";
 import { BastionConnect } from "./modules/bastionConnect";
 
-export default class Bastion {
-	// smartWallet: SmartWallet;
+export class Bastion {
 	bastionConnect: BastionConnect;
 
 	constructor() {
-		// this.smartWallet = new SmartWallet(config);
 		this.bastionConnect = new BastionConnect();
 	}
 }

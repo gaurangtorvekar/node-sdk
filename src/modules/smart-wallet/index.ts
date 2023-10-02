@@ -1,31 +1,27 @@
-import { Base } from "../../base";
 import * as aaContracts from "@account-abstraction/contracts";
-import { Web3Provider } from "@ethersproject/providers";
-// import * as ethersUtils from "ethers";
+import { JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet, utils, BigNumber } from "ethers";
 import axios from "axios";
-import { ECDSAKernelFactory__factory, Kernel__factory } from "./contracts";
+import { ECDSAKernelFactory__factory, Kernel__factory, BatchActions__factory } from "./contracts";
 import { BastionSignerOptions } from "../bastionConnect";
 
-const dotenv = require("dotenv");
+export interface SendTransactionResponse {
+	bundler: string;
+	bundlerURL: string;
+	chainId: number;
+	userOperationHash: string;
+}
 
-dotenv.config();
-
-const resourceName = "smartWallet";
-
-export class SmartWallet extends Base {
+export class SmartWallet {
 	ECDSAKernelFactory_Address = "0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e";
 	ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-	//TO DO: CHANGE BEFORE DEPLOYMENT
-	BASE_API_URL = "http://localhost:3000";
+	BATCH_ACTIONS_EXECUTOR = "0xaEA978bAa9357C7d2B3B2D243621B94ce3d5793F";
+	VALIDATOR_ADDRESS = "0x180D6465F921C7E0DEA0040107D342c87455fFF5";
+	BASE_API_URL = "https://api.bastionwallet.io";
+	SALT = 0;
 
-	init(): Promise<void> {
-		//execute initialization steps
-		return;
-	}
-
-	private async initParams(externalProvider: Web3Provider, options?: BastionSignerOptions) {
-		let signer, wallet;
+	async initParams(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
+		let signer;
 		try {
 			const address = await externalProvider.getSigner().getAddress();
 			signer = externalProvider.getSigner();
@@ -35,105 +31,159 @@ export class SmartWallet extends Base {
 
 		const entryPoint = aaContracts.EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, signer);
 		const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
-		return { signer, entryPoint, kernelAccountFactory };
-	}
-
-	async getSmartAccountAddress(externalProvider: Web3Provider, options?: BastionSignerOptions) {
-		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
-		// TODO - Make the 2nd argument to createAccount configurable - this is the "salt" which determines the address of the smart account
 		const signerAddress = await signer.getAddress();
-		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, 0);
-		console.log("Using Smart Wallet:", smartAccountAddress);
-		return { smartAccountAddress, signerAddress };
+		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
+		await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
+		return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress };
 	}
 
-	//TODO - Feature - Enable creating this Smart Account on multiple chains
-	async initSmartAccount(externalProvider: Web3Provider, options?: BastionSignerOptions): Promise<boolean> {
-		const { signer, kernelAccountFactory } = await this.initParams(externalProvider, options);
-
-		const createTx = await kernelAccountFactory.createAccount(await signer.getAddress(), 0, {
-			gasLimit: 300000,
-		});
-		await createTx.wait();
-		console.log("Created smart account", createTx.hash);
-
-		return true;
+	async initSmartAccount(externalProvider: JsonRpcProvider, smartAccountAddress: string, signerAddress: string, chainId: number, apiKey: string): Promise<boolean> {
+		const contractCode = await externalProvider.getCode(smartAccountAddress);
+		const headers = {
+			"x-api-key": apiKey,
+		};
+		// If the smart account has not been deployed, deploy it
+		if (contractCode === "0x") {
+			try {
+				const response = await axios.post(
+					`${this.BASE_API_URL}/v1/transaction/create-account`,
+					{
+						chainId: chainId,
+						eoa: signerAddress,
+						salt: this.SALT,
+					},
+					{ headers }
+				);
+				return false;
+			} catch (error) {
+				return error;
+			}
+		} else {
+			return true;
+		}
 	}
 
-	async prepareTransaction(externalProvider: Web3Provider, to: string, value: number, options?: BastionSignerOptions, data?: string): Promise<aaContracts.UserOperationStruct> {
-		const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
-		const { smartAccountAddress, signerAddress } = await this.getSmartAccountAddress(externalProvider, options);
+	async checkExecutionSet(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
+		const { smartAccountAddress, signer } = await this.initParams(externalProvider, options);
+		const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
+
+		const batchActionsInterface = new utils.Interface(["function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, uint8 operation) external"]);
+		const funcSignature = await batchActionsInterface.getSighash("executeBatch(address[],uint256[], bytes[], uint8)");
+
+		// First get the execution details from kernerlAccount
+		const executionDetails = await kernelAccount.getExecution(funcSignature);
+		// Only set the execution if it hasn't been set already
+		if (executionDetails[0] === 0) {
+			// Valid until 2030
+			const validUntil = 1893456000;
+
+			// Valid after current block timestamp
+			const block = await externalProvider.getBlock("latest");
+			const timestamp = block.timestamp;
+			const validAfter = BigNumber.from(timestamp);
+
+			// Encode packed owner address
+			const owner = await signer.getAddress();
+			const ownerSliced = owner.slice(2).padStart(40, "0");
+			const packedData = utils.arrayify("0x" + ownerSliced);
+
+			const setExecutionCallData = await kernelAccount.interface.encodeFunctionData("setExecution", [
+				funcSignature,
+				this.BATCH_ACTIONS_EXECUTOR,
+				this.VALIDATOR_ADDRESS,
+				validUntil,
+				validAfter,
+				packedData,
+			]);
+
+			const userOperation = await this.prepareTransaction(externalProvider, smartAccountAddress, 0, options, setExecutionCallData);
+			const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation, options.apiKey);
+			const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
+			await this.sendTransaction(externalProvider, signedUserOperation, options);
+
+			// Check execution details again for sanity
+			const executionDetails = await kernelAccount.getExecution(funcSignature);
+		}
+	}
+
+	async prepareTransaction(externalProvider: JsonRpcProvider, to: string, value: number, options?: BastionSignerOptions, data?: string): Promise<aaContracts.UserOperationStruct> {
+		const { smartAccountAddress, entryPoint, signerAddress, signer } = await this.initParams(externalProvider, options);
 		const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
-		//TODO - make this customizable based on the type of transaction
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, 0]);
-		const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, 0])]);
+		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
 		const gasPrice = await externalProvider.getGasPrice();
 
-		//Check if the smart account contract has been deployed
-		const contractCode = await externalProvider.getCode(smartAccountAddress);
+		// Check if the smart account contract has been deployed and setExecution has been called
+		const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
+
 		let nonce;
-		if (contractCode === "0x") {
+		if (!smartWalletDeployed) {
 			nonce = 0;
 		} else {
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
-			console.log("Nonce = ", nonce.toNumber());
+		}		
+
+		const dummySignature = utils.hexConcat([
+			"0x00000000",
+			await signer.signMessage(
+			  utils.arrayify(utils.keccak256("0xdead"))
+			),
+		])
+
+		const userOperation = {
+			sender: smartAccountAddress,
+			nonce: utils.hexlify(nonce),
+			initCode: "0x",
+			callData,
+			callGasLimit: utils.hexlify(250_000),
+			verificationGasLimit: utils.hexlify(600_000),
+			preVerificationGas: utils.hexlify(200_000),
+			maxFeePerGas: utils.hexlify(gasPrice),
+			maxPriorityFeePerGas: utils.hexlify(gasPrice),
+			paymasterAndData: "0x",
+			signature: dummySignature, 
+		};
+		return userOperation;
+	}
+
+	async prepareBatchTransaction(externalProvider: JsonRpcProvider, to: string[], data: string[], value: number[], options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
+		const { smartAccountAddress, entryPoint, signerAddress } = await this.initParams(externalProvider, options);
+		const batchActions = BatchActions__factory.connect(smartAccountAddress, externalProvider);
+
+		// 0 = call, 1 = delegatecall (type of Operation)
+		const callData = batchActions.interface.encodeFunctionData("executeBatch", [to, value, data, 0]);
+		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
+		const gasPrice = await externalProvider.getGasPrice();
+
+		// Check if the smart account contract has been deployed and setExecution has been called
+		const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
+		await this.checkExecutionSet(externalProvider, options);
+
+		let nonce;
+		if (!smartWalletDeployed) {
+			nonce = 0;
+		} else {
+			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 		}
 		const userOperation = {
 			sender: smartAccountAddress,
 			nonce: utils.hexlify(nonce),
-			initCode: contractCode === "0x" ? initCode : "0x",
+			initCode: "0x",
 			callData,
-			callGasLimit: utils.hexlify(75_000),
-			verificationGasLimit: utils.hexlify(100_000),
-			preVerificationGas: utils.hexlify(45000),
+			callGasLimit: utils.hexlify(150_000),
+			verificationGasLimit: utils.hexlify(500_000),
+			preVerificationGas: utils.hexlify(100_000),
 			maxFeePerGas: utils.hexlify(gasPrice),
 			maxPriorityFeePerGas: utils.hexlify(gasPrice),
 			paymasterAndData: "0x",
 			signature: "0x",
 		};
-		console.log("Inside prepareTransaction | Prepared user operation: ", userOperation);
 		return userOperation;
 	}
 
-	// private async prepareBatchTransaction(externalProvider: Web3Provider, to: string[], data: string[], value: number[], options?: BastionSignerOptions): Promise<UserOperationStruct> {
-	// 	const { signer, entryPoint, kernelAccountFactory } = await this.initParams(externalProvider, options);
-	// 	const smartAccountAddress = await this.getSmartAccountAddress(externalProvider, options);
-	// 	const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
-
-	// 	const callData = kernelAccount.interface.encodeFunctionData("executeBatch", [to, value, data, ]);
-	// 	const initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [await signer.getAddress(), 0])]);
-	// 	const gasPrice = await externalProvider.getGasPrice();
-
-	// 	//Check if the smart account contract has been deployed
-	// 	const contractCode = await externalProvider.getCode(smartAccountAddress);
-	// 	let nonce;
-	// 	if (contractCode === "0x") {
-	// 		nonce = 0;
-	// 	} else {
-	// 		nonce = await kernelAccount.callStatic.getNonce();
-	// 		console.log("| Nonce: ", nonce);
-	// 	}
-
-	// 	const userOperation = {
-	// 		sender: smartAccountAddress,
-	// 		nonce: utils.hexlify(nonce),
-	// 		initCode: contractCode === "0x" ? initCode : "0x",
-	// 		callData,
-	// 		callGasLimit: utils.hexlify(80_000),
-	// 		verificationGasLimit: utils.hexlify(300_000),
-	// 		preVerificationGas: utils.hexlify(40000),
-	// 		maxFeePerGas: utils.hexlify(gasPrice),
-	// 		maxPriorityFeePerGas: utils.hexlify(gasPrice),
-	// 		paymasterAndData: "0x",
-	// 		signature: "0x",
-	// 	};
-	// 	console.log("Inside prepareTransaction | Prepared user operation: ", userOperation);
-	// 	return userOperation;
-	// }
-
-	async signUserOperation(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
+	async signUserOperation(externalProvider: JsonRpcProvider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
 		const { signer, entryPoint } = await this.initParams(externalProvider, options);
 
 		const signature = await signer.signMessage(utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
@@ -141,77 +191,71 @@ export class SmartWallet extends Base {
 		const signatureWithPadding = utils.hexConcat([padding, signature]);
 		userOperation.signature = signatureWithPadding;
 
-		console.log("Inside signUserOperation | Signed user Operation: ", userOperation);
-
 		return userOperation;
 	}
 
-	async getSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, endpoint: string, erc20Token?: string): Promise<aaContracts.UserOperationStruct> {
+	private async getSponsorship(apiKey: string, chainId: number, userOperation: aaContracts.UserOperationStruct, endpoint: string, erc20Token?: string): Promise<aaContracts.UserOperationStruct> {
 		try {
-			console.log("========== Calling Pimlico Paymaster to sponsor gas ==========");
 			const payload = { chainId, userOperation };
 			if (erc20Token) payload["erc20Token"] = erc20Token;
-
-			const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload);
+			const headers = {
+				"x-api-key": apiKey,
+			};
+			const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload, { headers });
 			const updatedUserOperation = response?.data?.data?.paymasterDataResponse?.userOperation;
 
-			console.log("Inside getSponsorship | Sponsored user operation: ", updatedUserOperation);
 			return updatedUserOperation;
 		} catch (e) {
-			console.log("Error from getSponsorship api call: ", e.response.data);
-			throw e;
+			throw new Error(`Error while getting sponsorship, reason: ${e.response.data.message}`);
 		}
 	}
 
-	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct): Promise<aaContracts.UserOperationStruct> {
+	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, apiKey: string): Promise<aaContracts.UserOperationStruct> {
 		try {
-			return await this.getSponsorship(chainId, userOperation, "/v1/transaction/payment-sponsorship");
+			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship");
 		} catch (error) {
 			throw error;
 		}
 	}
 
-	async getPaymasterSponsorshipERC20(chainId: number, userOperation: aaContracts.UserOperationStruct, erc20Token: string): Promise<aaContracts.UserOperationStruct> {
+	async getPaymasterSponsorshipERC20(chainId: number, userOperation: aaContracts.UserOperationStruct, erc20Token: string, apiKey: string): Promise<aaContracts.UserOperationStruct> {
 		try {
-			return await this.getSponsorship(chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
+			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
 		} catch (error) {
 			throw error;
 		}
 	}
 
-	async sendTransaction(externalProvider: Web3Provider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<string> {
-		//First find the native currency balance for the smartAccount
-		const { smartAccountAddress } = await this.getSmartAccountAddress(externalProvider, options);
-		const eth_balance = await externalProvider.getBalance(smartAccountAddress);
-
-		if (eth_balance < BigNumber.from(10)) {
-			throw new Error("Insufficient balance in smart account");
-		}
-
+	async sendTransaction(externalProvider: JsonRpcProvider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<SendTransactionResponse> {
 		try {
-			console.log("========== Sending transaction through bundler ==========");
-			const response = await axios.post(`${this.BASE_API_URL}/v1/transaction/send-transaction`, {
-				chainId: options.chainId,
-				userOperation: userOperation,
-			});
+			const headers = {
+				"x-api-key": options.apiKey,
+			};
+			const response = await axios.post(
+				`${this.BASE_API_URL}/v1/transaction/send-transaction`,
+				{
+					chainId: options.chainId,
+					userOperation: userOperation,
+				},
+				{ headers }
+			);
 			const sendTransactionResponse = response?.data.data.sendTransactionResponse;
 			return sendTransactionResponse;
 		} catch (e) {
-			console.log("Error from sendTransaction api call: ", e.response.data);
-			throw e;
+			throw new Error(`Error while sending transaction through the bundler, reason: ${e.message}`);
 		}
 	}
 
-	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number): Promise<Object> {
+	async getTransactionReceiptByUserOpHash(userOpHash: string, chainId: number, apiKey: string): Promise<string> {
 		try {
-			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`);
-			console.log(response);
-			const trxReceipt = response?.data.data.trxReceipt;
-			console.log("Inside getTransactionReceiptByUserOpHash | UserOperation hash:", trxReceipt);
+			const headers = {
+				"x-api-key": apiKey,
+			};
+			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
+			const trxReceipt = response?.data.data.trxReceipt.receipt.transactionHash;
 			return trxReceipt;
 		} catch (e) {
-			console.log("Error from getTransactionReceiptByUserOpHash api call: ", e.message);
-			return e.message;
+			throw new Error(`Error while getting transaction receipt by user operation hash, reason: ${e.message}`);
 		}
 	}
 }
