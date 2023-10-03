@@ -252,10 +252,10 @@ export class SmartWallet {
 				"x-api-key": apiKey,
 			};
 			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
-			const trxReceipt = response?.data.data.trxReceipt.receipt.transactionHash;
+			const trxReceipt = response?.data?.data?.trxReceipt?.receipt?.transactionHash;
 			return trxReceipt;
 		} catch (e) {
-			throw new Error(`Error while getting transaction receipt by user operation hash, reason: ${e.message}`);
+			return e
 		}
 	}
 }

@@ -165,7 +165,10 @@ export async function getTransactionHash(provider: JsonRpcProvider, userOpHash: 
 	try {
 		await initializeIfNeeded(provider, options);
 		const chainId = options?.chainId ? options.chainId : (await provider.getNetwork()).chainId;
-		const transactionHash = await smartWallet.getTransactionReceiptByUserOpHash(userOpHash, chainId, options?.apiKey || "");
+		const transactionHash: any = await smartWallet.getTransactionReceiptByUserOpHash(userOpHash, chainId, options?.apiKey || "");
+		if (transactionHash instanceof Error){
+			reportError({message : "Error while getting transaction receipt by user operation hash", code: 400, type : "TRANSACTION_HASH_ERR"})
+		}
 		return transactionHash;
 	} catch (error) {
 		console.error("Error in getTransactionHash:", error.message);
