@@ -8,6 +8,11 @@ import axios from "axios";
 import { BastionSignerOptions, BasicTransaction } from "../modules/bastionConnect";
 import { createDummyTransactionReceipt } from "../helper";
 
+const reportError = ({message, code}: {message: string, code : number}) => {
+	// send the error to our logging service...
+	return {message, code};
+  }
+
 const BASE_API_URL = "https://api.bastionwallet.io";
 const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 
@@ -85,9 +90,21 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 		let userOpToSign = userOperation;
 
 		if (!options?.noSponsorship) {
-			userOpToSign = options?.gasToken
-				? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey)
-				: await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
+			// userOpToSign = options?.gasToken
+			// 	? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey)
+			// 	: await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
+
+			if(options?.gasToken){
+				userOpToSign = await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey);
+				if (userOpToSign instanceof Error){
+					reportError({message : "Error while sending transaction through the bundler", code: 400})
+				}
+			}else{
+				userOpToSign = await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
+				if (userOpToSign instanceof Error){
+					reportError({message : "Error while sending transaction through the bundler", code: 400})
+				}
+			}
 		}
 
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
@@ -115,9 +132,21 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 		let userOpToSign = userOperation;
 
 		if (!options?.noSponsorship) {
-			userOpToSign = options?.gasToken
-				? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey)
-				: await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
+			// userOpToSign = options?.gasToken
+			// 	? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey)
+			// 	: await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
+
+			if(options?.gasToken){
+				userOpToSign = await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey);
+				if (userOpToSign instanceof Error){
+					reportError({message : "Error while sending transaction through the bundler", code: 400})
+				}
+			}else{
+				userOpToSign = await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
+				if (userOpToSign instanceof Error){
+					reportError({message : "Error while sending transaction through the bundler", code: 400})
+				}
+			}
 		}
 
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);

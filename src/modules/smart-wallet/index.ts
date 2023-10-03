@@ -210,11 +210,11 @@ export class SmartWallet {
 		}
 	}
 
-	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, apiKey: string): Promise<aaContracts.UserOperationStruct> {
+	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, apiKey: string): Promise<aaContracts.UserOperationStruct > {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship");
 		} catch (error) {
-			throw error;
+			return error;
 		}
 	}
 
@@ -222,7 +222,7 @@ export class SmartWallet {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
 		} catch (error) {
-			throw error;
+			return error;
 		}
 	}
 
