@@ -97,12 +97,12 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 			if(options?.gasToken){
 				userOpToSign = await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey);
 				if (userOpToSign instanceof Error){
-					reportError({message : "Error while sending transaction through the bundler", code: 400, type : "PAYMENT_SPONSORSHIP_ERR"})
+					reportError({message : "Error while sending transaction through the bundler", code: 400, type : "BATCH_PAYMENT_SPONSORSHIP_ERR"})
 				}
 			}else{
 				userOpToSign = await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
 				if (userOpToSign instanceof Error){
-					reportError({message : "Error while sending transaction through the bundler", code: 400, type : "PAYMENT_SPONSORSHIP_ERR"})
+					reportError({message : "Error while sending transaction through the bundler", code: 400, type : "BATCH_PAYMENT_SPONSORSHIP_ERR"})
 				}
 			}
 		}
@@ -139,12 +139,12 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 			if(options?.gasToken){
 				userOpToSign = await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey);
 				if (userOpToSign instanceof Error){
-					reportError({message : "Error while sending transaction through the bundler", code: 400})
+					reportError({message : "Error while sending transaction through the bundler", code: 400, type : "PAYMENT_SPONSORSHIP_ERR"})
 				}
 			}else{
 				userOpToSign = await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
 				if (userOpToSign instanceof Error){
-					reportError({message : "Error while sending transaction through the bundler", code: 400})
+					reportError({message : "Error while sending transaction through the bundler", code: 400, type : "PAYMENT_SPONSORSHIP_ERR"})
 				}
 			}
 		}
