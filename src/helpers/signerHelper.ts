@@ -8,9 +8,8 @@ import axios from "axios";
 import { BastionSignerOptions, BasicTransaction } from "../modules/bastionConnect";
 import { createDummyTransactionReceipt } from "../helper";
 
-const reportError = ({message, code, type}: {message: string, code : number, type: string}) => {
-	// send the error to our logging service...
-	return {message, code, type};
+const reportError = ({message, cause}: {message: string, cause: string}) => {
+	throw new Error(message, {cause})
   }
 
 const BASE_API_URL = "https://api.bastionwallet.io";
@@ -90,21 +89,9 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 		let userOpToSign = userOperation;
 
 		if (!options?.noSponsorship) {
-			// userOpToSign = options?.gasToken
-			// 	? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey)
-			// 	: await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
-
-			if(options?.gasToken){
-				userOpToSign = await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey);
-				if (userOpToSign instanceof Error){
-					reportError({message : "Error while sending transaction through the bundler", code: 400, type : "BATCH_PAYMENT_SPONSORSHIP_ERR"})
-				}
-			}else{
-				userOpToSign = await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
-				if (userOpToSign instanceof Error){
-					reportError({message : "Error while sending transaction through the bundler", code: 400, type : "BATCH_PAYMENT_SPONSORSHIP_ERR"})
-				}
-			}
+			userOpToSign = options?.gasToken
+				? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey)
+				: await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
 		}
 
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
@@ -113,8 +100,16 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		return await createTransactionResponse(signedUserOperation, res.userOperationHash, options?.apiKey || "");
 	} catch (error) {
-		console.error("Error in batchTransactionRouting:", error.message);
-		throw new Error(`batchTransactionRouting error: ${error.message}`);
+		
+		const errorType = error.message.split("~")[0]
+		if(errorType == "PAYMENT_SPONSORSHIP_ERR_ERC20"){
+			reportError({message : "Error while sending transaction through the bundler", cause: "BATCH_PAYMENT_SPONSORSHIP_ERR_ERC20"})
+		}else if(errorType == "PAYMENT_SPONSORSHIP_ERR"){
+			reportError({message : "Error while sending transaction through the bundler", cause : "BATCH_PAYMENT_SPONSORSHIP_ERR"})
+		}else {
+			console.error("Error in batchTransactionRouting:", error.message);
+			throw new Error(`batchTransactionRouting error: ${error.message}`);
+		}
 	}
 }
 
@@ -132,21 +127,9 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 		let userOpToSign = userOperation;
 
 		if (!options?.noSponsorship) {
-			// userOpToSign = options?.gasToken
-			// 	? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey)
-			// 	: await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
-
-			if(options?.gasToken){
-				userOpToSign = await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey);
-				if (userOpToSign instanceof Error){
-					reportError({message : "Error while sending transaction through the bundler", code: 400, type : "PAYMENT_SPONSORSHIP_ERR"})
-				}
-			}else{
-				userOpToSign = await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
-				if (userOpToSign instanceof Error){
-					reportError({message : "Error while sending transaction through the bundler", code: 400, type : "PAYMENT_SPONSORSHIP_ERR"})
-				}
-			}
+			userOpToSign = options?.gasToken
+				? await smartWallet.getPaymasterSponsorshipERC20(chainId, userOperation, options.gasToken, options.apiKey)
+				: await smartWallet.getPaymasterSponsorship(chainId, userOperation, options?.apiKey || "");
 		}
 
 		const signedUserOperation = await smartWallet.signUserOperation(provider, userOpToSign, options);
@@ -156,8 +139,15 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		return await createTransactionResponse(signedUserOperation, res.userOperationHash, options?.apiKey || "");
 	} catch (error) {
-		console.error("Error in transactionRouting:", error.message);
-		throw new Error(`transactionRouting error: ${error.message}`);
+		const errorType = error.message.split("~")[0]
+		if(errorType == "PAYMENT_SPONSORSHIP_ERR_ERC20"){
+			reportError({message : "Error while sending transaction through the bundler", cause: "PAYMENT_SPONSORSHIP_ERR_ERC20"})
+		}else if(errorType == "PAYMENT_SPONSORSHIP_ERR"){
+			reportError({message : "Error while sending transaction through the bundler", cause : "PAYMENT_SPONSORSHIP_ERR"})
+		}else {
+			console.error("Error in transactionRouting:", error.message);
+			throw new Error(`transactionRouting error: ${error.message}`);
+		}
 	}
 }
 
@@ -165,10 +155,7 @@ export async function getTransactionHash(provider: JsonRpcProvider, userOpHash: 
 	try {
 		await initializeIfNeeded(provider, options);
 		const chainId = options?.chainId ? options.chainId : (await provider.getNetwork()).chainId;
-		const transactionHash: any = await smartWallet.getTransactionReceiptByUserOpHash(userOpHash, chainId, options?.apiKey || "");
-		if (transactionHash instanceof Error){
-			reportError({message : "Error while getting transaction receipt by user operation hash", code: 400, type : "TRANSACTION_HASH_ERR"})
-		}
+		const transactionHash = await smartWallet.getTransactionReceiptByUserOpHash(userOpHash, chainId, options?.apiKey || "");
 		return transactionHash;
 	} catch (error) {
 		console.error("Error in getTransactionHash:", error.message);

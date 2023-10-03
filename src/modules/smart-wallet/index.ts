@@ -214,7 +214,7 @@ export class SmartWallet {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship");
 		} catch (error) {
-			return error;
+			throw new Error(`PAYMENT_SPONSORSHIP_ERR~ Error while sending transaction through the bundler, reason: ${error.message}`);
 		}
 	}
 
@@ -222,7 +222,7 @@ export class SmartWallet {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
 		} catch (error) {
-			return error;
+			throw new Error(`PAYMENT_SPONSORSHIP_ERR_ERC20~ Error while sending transaction through the bundler, reason: ${error.message}`);
 		}
 	}
 
@@ -255,7 +255,7 @@ export class SmartWallet {
 			const trxReceipt = response?.data?.data?.trxReceipt?.receipt?.transactionHash;
 			return trxReceipt;
 		} catch (e) {
-			return e
+			throw new Error(`Error while getting transaction receipt by user operation hash, reason : ${e.message}`)
 		}
 	}
 }
