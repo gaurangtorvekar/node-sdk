@@ -68,7 +68,6 @@ export class ViemConnect {
         TFunctionName extends string,
         TChainOverride extends Chain | undefined,
     >(
-        client: Client<Transport, TChain, TAccount>,
         {
             abi,
             address,
