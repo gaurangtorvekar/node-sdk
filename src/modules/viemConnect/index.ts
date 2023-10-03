@@ -95,12 +95,12 @@ export class ViemConnect {
             ...request
           }
         console.log("transaciton", transaction); 
-        const a = await transactionRouting(this.publicClient, this.walletClient, transaction, this.options);
-        console.log("a",a)
-        // Write the transaction routing logic
-        const hash = '0xyz';
-        
-        return hash
+        try {
+            const res = await transactionRouting(this.publicClient, this.walletClient, transaction, this.options);
+            return res?.hash as `0x${string}` ;
+        } catch (error) {
+            return error
+        }
     }
 
 }
