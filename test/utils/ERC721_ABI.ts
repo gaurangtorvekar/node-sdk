@@ -509,17 +509,7 @@ export const ERC721_ABI = [
 				"internalType": "address",
 				"name": "to",
 				"type": "address",
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256",
-			},
-			{
-				"internalType": "string",
-				"name": "uri",
-				"type": "string",
-			},
+			}
 		],
 		"name": "safeMint",
 		"outputs": [],
