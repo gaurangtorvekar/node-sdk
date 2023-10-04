@@ -113,7 +113,7 @@ describe("setupSmartAccount", ()=> {
 		expect(trxhash).toHaveLength(66);
 	}, 70000);
 
-	it("should batch mint and transfer of NFT", async () => {
+	it("should batch mint 2 NFTs at a time", async () => {
 		let bastion = new Bastion();
 		const BastionViem = await bastion.viemConnect;
 		//Pass along a gasToken to use for gas
