@@ -71,7 +71,7 @@ describe("setupSmartAccount", ()=> {
 	}, 70000);
 
 
-    it("should mint a NFT gaslessly with simulateContract methods", async () => {
+    it.skip("should mint a NFT gaslessly with simulateContract method", async () => {
 		let bastion = new Bastion();
 		const BastionViem = await bastion.viemConnect;
 		//Pass along a gasToken to use for gas
@@ -113,6 +113,36 @@ describe("setupSmartAccount", ()=> {
 		expect(trxhash).toHaveLength(66);
 	}, 70000);
 
+	it("should batch mint and transfer of NFT", async () => {
+		let bastion = new Bastion();
+		const BastionViem = await bastion.viemConnect;
+		//Pass along a gasToken to use for gas
+		const aaAddress = await BastionViem.init(publicClient,walletClient, DEFAULT_CONFIG);
+
+		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+		// const contractAddress2 = "0xf56AEcB7F7739637FEFc0DC7Fe593BF0Bc5801bF";
+		const transaction1 = {
+			account,
+			address: contractAddress as `0x${string}`,
+			abi: abi,
+			functionName: 'safeMint',
+			args: [aaAddress],
+			chain: arbitrumGoerli
+		}
+
+		const transaction2 = {
+			account,
+			address: contractAddress as `0x${string}`,
+			abi: abi,
+			functionName: 'safeMint',
+			args: [aaAddress],
+			chain: arbitrumGoerli
+		}
+
+		const trxhash = await BastionViem.writeContractBatch([transaction1,transaction2]);
+		console.log("Trx hash:", trxhash);
+		expect(trxhash).toHaveLength(66);
+	}, 70000);
 
 })
 

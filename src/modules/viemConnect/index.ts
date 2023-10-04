@@ -5,7 +5,7 @@ import {encodeFunctionData, createPublicClient, http, createWalletClient, getAdd
 import {WriteContractReturnType, WriteContractParameters} from './type'
 import { checkChainCompatibility } from "../../helper";
 import { ethers } from "ethers";
-import { transactionRouting } from "../../helpers/viemHelper";
+import { transactionRouting, batchTransactionRouting } from "../../helpers/viemHelper";
 import { SmartWalletViem } from "../smart-wallet/viemSmartWallet";
 export interface BastionViemOptions {
 	privateKey?: string;
@@ -16,6 +16,7 @@ export interface BastionViemOptions {
 	gasToken?: string;
 	noSponsorship?: boolean;
 }
+
 export class ViemConnect {
 
     private BASE_API_URL = "https://api.bastionwallet.io";
@@ -99,4 +100,47 @@ export class ViemConnect {
         }
     }
 
+    async writeContractBatch<
+        TChain extends Chain | undefined,
+        TAccount extends Account | undefined,
+        const TAbi extends Abi | readonly unknown[],
+        TFunctionName extends string,
+        TChainOverride extends Chain | undefined,
+    >(
+        batchInputs: Array<WriteContractParameters<
+            TAbi,
+            TFunctionName,
+            TChain,
+            TAccount,
+            TChainOverride
+        >>,
+    ): Promise<WriteContractReturnType> {
+        const transactions = [];
+        try {
+            for (const parameterSet of batchInputs) {
+                const { abi, address, args, dataSuffix, functionName, ...request } = parameterSet;
+                const data = encodeFunctionData({
+                    abi,
+                    args,
+                    functionName,
+                } as unknown as EncodeFunctionDataParameters<TAbi, TFunctionName>)
+        
+                const transaction = {
+                    data: `${data}${dataSuffix ? dataSuffix.replace('0x', '') : ''}`,
+                    to: address,
+                    ...request
+                }
+                if(!transaction.value) {
+                    //@ts-ignore
+                    transaction.value = BigInt(0);
+                }
+                transactions.push(transaction);
+            }
+            console.log("trx", transactions);
+            const res = await batchTransactionRouting(this.publicClient, this.walletClient, transactions, this.options);
+            return res?.hash as `0x${string}` ;
+        } catch (error) {
+            return error
+        }
+    }
 }
