@@ -34,25 +34,14 @@ export class SmartWalletViem {
 			publicClient,
 			walletClient
 		})
-		// const entryPoint = aaContracts.EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, signer);
-
 		const kernelAccountFactory = getContract({
 			address: this.ECDSAKernelFactory_Address as `0x${string}`,
 			abi: ECDSAKernelFactory__factory.abi,
 			publicClient,
 			walletClient
 		})
-		console.log("in",kernelAccountFactory)
-		// const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
 		const clientAddress = walletClient.account.address;
-		console.log("clientAddress",clientAddress);
-		// const smartAccountAddress = publicClient.readContract({
-		// 	address: this.ECDSAKernelFactory_Address as `0x${string}`,
-		// 	abi: ECDSAKernelFactory__factory.abi,
-		// 	walletClient
-		// })
 		const smartAccountAddress: `0x${string}` = await kernelAccountFactory.read.getAccountAddress([clientAddress, BigInt(this.SALT)])
-		console.log("smartAccountAddress",smartAccountAddress);
 		await this.initSmartAccount(smartAccountAddress, clientAddress, options.chainId, options.apiKey);
 		return { walletClient, publicClient, entryPoint, kernelAccountFactory, smartAccountAddress, clientAddress };
 	}
@@ -92,7 +81,6 @@ export class SmartWalletViem {
 			publicClient,
 			walletClient
 		})
-		// const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
 		const batchActionsInterface = new utils.Interface(["function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, uint8 operation) external"]);
 		const funcSignature = (batchActionsInterface.getSighash("executeBatch(address[],uint256[], bytes[], uint8)")) as `0x${string}`;
 
@@ -109,9 +97,7 @@ export class SmartWalletViem {
 			const validAfter = timestamp;
 
 			// Encode packed owner address
-			console.log("validAfter", validAfter)
 			const owner = walletClient.account.address;
-			console.log("owner:", owner);
 			const ownerSliced = owner.slice(2).padStart(40, "0");
 			const packedData = utils.arrayify("0x" + ownerSliced);
 
@@ -128,15 +114,6 @@ export class SmartWalletViem {
 					packedData,
 				]
 			})
-
-			// const setExecutionCallData = await kernelAccount.interface.encodeFunctionData("setExecution", [
-			// 	funcSignature,
-			// 	this.BATCH_ACTIONS_EXECUTOR,
-			// 	this.VALIDATOR_ADDRESS,
-			// 	validUntil,
-			// 	validAfter,
-			// 	packedData,
-			// ]);
 
 			const userOperation = await this.prepareTransaction(publicClient, walletClient, smartAccountAddress, 0, options, setExecutionCallData);
 			const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation, options.apiKey) as UserOperationStructViem;
@@ -156,7 +133,6 @@ export class SmartWalletViem {
 			publicClient,
 			walletClient
 		})
-		// const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = encodeFunctionData({
@@ -166,8 +142,7 @@ export class SmartWalletViem {
 				to, BigInt(value), data, 0
 			]
 		})
-		// const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, 0]);
-		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
+		
 		const gasPrice = await publicClient.getGasPrice() 
 
 		// Check if the smart account contract has been deployed and setExecution has been called
@@ -179,7 +154,6 @@ export class SmartWalletViem {
 		} else {
 			nonce = await entryPoint.read.getNonce([smartAccountAddress, BigInt(0)]);
 		}		
-		console.log("dummy bfe", walletClient);
 		const dummySignature = utils.hexConcat([
 			"0x00000000",
 			await walletClient.signMessage({
@@ -187,7 +161,6 @@ export class SmartWalletViem {
 				message: {raw: utils.keccak256("0xdead") as `0x${string}`}
 			}),
 		])
-		console.log("dummy aft", dummySignature)
 
 		const userOperation = {
 			sender: smartAccountAddress,
@@ -215,16 +188,12 @@ export class SmartWalletViem {
 			walletClient
 		})
 
-		// const batchActions = BatchActions__factory.connect(smartAccountAddress, externalProvider);
-
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = encodeFunctionData({
 			abi: batchActions.abi,
 			functionName: "executeBatch",
 			args: [to, value, data, 0]
 		})
-		// const callData = batchActions.interface.encodeFunctionData("executeBatch", [to, value, data, 0]);
-		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
 		const gasPrice = await publicClient.getGasPrice();
 
 		// Check if the smart account contract has been deployed and setExecution has been called
@@ -255,7 +224,6 @@ export class SmartWalletViem {
 
 	async signUserOperation(publicClient: PublicClient, walletClient: WalletClient, userOperation: UserOperationStructViem, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
 		const { entryPoint, clientAddress } = await this.initParams(walletClient, publicClient, options);
-		console.log("clientadd", clientAddress);
 		const signature = await walletClient.signMessage({
 			account: walletClient.account,
 			message: { raw: await entryPoint.read.getUserOpHash([userOperation])}

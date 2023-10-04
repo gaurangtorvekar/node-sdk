@@ -35,15 +35,11 @@ async function initParams(publicClient: PublicClient, walletClient: WalletClient
 			publicClient,
 			walletClient
 	})
-	// entryPoint = EntryPoint__factory.connect(ENTRY_POINT_ADDRESS, signer);
 }
 
 export async function createTransactionResponse(userOp1: UserOperationStruct, userOpHash: string, apiKey: string): Promise<TransactionResponse> {
 	const userOp = await resolveProperties(userOp1);
 	try {
-		const headers = { "x-api-key": apiKey };
-		// const axiosResponse = await axios.get(`${BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
-		// const transactionReceipt = axiosResponse.data; // Extract the actual data
 		const transactionReceipt = createDummyTransactionReceipt();
 		return {
 			hash: userOpHash,

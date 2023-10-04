@@ -16,7 +16,6 @@ export interface BastionViemOptions {
 	gasToken?: string;
 	noSponsorship?: boolean;
 }
-
 export class ViemConnect {
 
     private BASE_API_URL = "https://api.bastionwallet.io";
@@ -24,7 +23,6 @@ export class ViemConnect {
     private options: BastionViemOptions;
     private publicClient : PublicClient;
     private walletClient : WalletClient;
-    
 
     private async validateApiKey(apiKey?: string): Promise<void> {
 		if (!apiKey) {
@@ -36,7 +34,6 @@ export class ViemConnect {
 			throw new Error("Invalid API Key");
 		}
 	}
-
 
     async init(publicClient: PublicClient, walletClient: WalletClient, options?: BastionViemOptions) {
 		await this.validateApiKey(options?.apiKey);
@@ -57,7 +54,7 @@ export class ViemConnect {
 		return smartAccountAddress;
 	}
 
-    async signMessage(message: string | { raw: Hex | ByteArray }, account?: Account, ): Promise<string> {
+    async signMessage(message: string | { raw: Hex | ByteArray }, account?: Account, ): Promise<Hex> {
 		return this.walletClient.signMessage({account, message});
 	}
 
@@ -94,7 +91,6 @@ export class ViemConnect {
             to: address,
             ...request
           }
-        console.log("transaciton", transaction); 
         try {
             const res = await transactionRouting(this.publicClient, this.walletClient, transaction, this.options);
             return res?.hash as `0x${string}` ;
