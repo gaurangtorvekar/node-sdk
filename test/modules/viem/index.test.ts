@@ -53,7 +53,32 @@ describe("setupSmartAccount", ()=> {
 		client = setup();
 	});
 
-	it.skip("should get a samrt wallet address and message signature", async () => {
+	it("should call a Smart Contract function gasless for ERC20 gas", async () => {
+		let bastion = new Bastion();
+		const BastionViem = await bastion.viemConnect;
+
+		//Pass along a gasToken to use for gas
+		DEFAULT_CONFIG.gasToken = "DAI";
+		const aaAddress = await BastionViem.init(publicClient, walletClient, DEFAULT_CONFIG);
+
+		const contractAddress = "0xEAC57C1413A2308cd03eF3CEa5c9224487825341";
+		const contractABI = ["function safeMint(address to) public", "function balanceOf(address owner) external view returns (uint256 balance)"];
+
+		const { request } = await publicClient.simulateContract({
+			account,
+			address: contractAddress,
+			abi: abi,
+			functionName: 'safeMint',
+			args: [aaAddress]
+		})
+
+		const trxhash = await BastionViem.writeContract(request);
+		console.log("Trx hash:", trxhash);
+		expect(trxhash).toHaveLength(66);
+	}, 70000);
+
+
+	it.skip("should get a smart wallet address and message signature", async () => {
 		let bastion = new Bastion();
 		const BastionViem = await bastion.viemConnect;
 
@@ -70,6 +95,55 @@ describe("setupSmartAccount", ()=> {
 
 	}, 70000);
 
+
+	it("should mint an NFT with gas from Smart Account", async () => {
+		let bastion = new Bastion();
+		const BastionViem = await bastion.viemConnect;
+
+		DEFAULT_CONFIG.noSponsorship = true;
+		const aaAddress = await BastionViem.init(publicClient,walletClient, DEFAULT_CONFIG);
+
+		const contractAddress = BastionSampleNFT;
+		const contractABI = ["function safeMint(address to) public"];
+
+		const { request } = await publicClient.simulateContract({
+			account,
+			address: contractAddress,
+			abi: abi,
+			functionName: 'safeMint',
+			args: [aaAddress]
+		})
+
+		const trxhash = await BastionViem.writeContract(request);
+		console.log("Trx hash:", trxhash);
+		expect(trxhash).toHaveLength(66);
+	}, 70000);
+
+	it("should mint an NFT with LINK ERC20 gas", async () => {
+		let bastion = new Bastion();
+		const BastionViem = await bastion.viemConnect;
+
+		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
+		// Stackup Test ERC20 gas token  = 0x3870419Ba2BBf0127060bCB37f69A1b1C090992B
+		DEFAULT_CONFIG.gasToken = "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28";
+		// DEFAULT_CONFIG.gasToken = "0x3870419Ba2BBf0127060bCB37f69A1b1C090992B";
+		const aaAddress = await BastionViem.init(publicClient,walletClient, DEFAULT_CONFIG);
+
+		const contractAddress = BastionSampleNFT;
+		const contractABI = ["function safeMint(address to) public"];
+
+		const { request } = await publicClient.simulateContract({
+			account,
+			address: contractAddress,
+			abi: abi,
+			functionName: 'safeMint',
+			args: [aaAddress]
+		})
+
+		const trxhash = await BastionViem.writeContract(request);
+		console.log("Trx hash:", trxhash);
+		expect(trxhash).toHaveLength(66);
+	}, 70000);
 
     it.skip("should mint a NFT gaslessly with simulateContract method", async () => {
 		let bastion = new Bastion();

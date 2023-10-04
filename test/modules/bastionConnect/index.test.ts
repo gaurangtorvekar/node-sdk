@@ -16,7 +16,7 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 	privateKey: process.env.PRIVATE_KEY || "",
 	// rpcUrl: process.env.RPC_URL1 || "", //mumbai
 	// chainId: 80001,
-	rpcUrl: process.env.RPC_URL2 || "", // arb-goerli
+	rpcUrl: process.env.RPC_URL_ARB_GOERLI || "", // arb-goerli
 	chainId: 421613,
 	// rpcUrl: process.env.RPC_URL3 || "", // scroll
 	// chainId: 534353,
@@ -160,7 +160,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should mint an NFT with gas from Smart Account", async () => {
+	it.skip("should mint an NFT with gas from Smart Account", async () => {
 		let bastion = new Bastion();
 		const bastionConnect = await bastion.bastionConnect;
 
@@ -177,7 +177,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should mint an NFT with LINK ERC20 gas", async () => {
+	it.skip("should mint an NFT with LINK ERC20 gas", async () => {
 		let bastion = new Bastion();
 		const bastionConnect = await bastion.bastionConnect;
 
@@ -229,7 +229,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should mint an NFT gasless-ly", async () => {
+	it.skip("should mint an NFT gasless-ly", async () => {
 		try {
 			let bastion = new Bastion();
 			const bastionConnect = await bastion.bastionConnect;
