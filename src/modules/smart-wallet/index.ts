@@ -210,11 +210,11 @@ export class SmartWallet {
 		}
 	}
 
-	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, apiKey: string): Promise<aaContracts.UserOperationStruct> {
+	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, apiKey: string): Promise<aaContracts.UserOperationStruct > {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship");
 		} catch (error) {
-			throw error;
+			throw new Error(`PAYMENT_SPONSORSHIP_ERR~ Error while sending transaction through the bundler, reason: ${error.message}`);
 		}
 	}
 
@@ -222,7 +222,7 @@ export class SmartWallet {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
 		} catch (error) {
-			throw error;
+			throw new Error(`PAYMENT_SPONSORSHIP_ERR_ERC20~ Error while sending transaction through the bundler, reason: ${error.message}`);
 		}
 	}
 
@@ -252,10 +252,10 @@ export class SmartWallet {
 				"x-api-key": apiKey,
 			};
 			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
-			const trxReceipt = response?.data.data.trxReceipt.receipt.transactionHash;
+			const trxReceipt = response?.data?.data?.trxReceipt?.receipt?.transactionHash;
 			return trxReceipt;
 		} catch (e) {
-			throw new Error(`Error while getting transaction receipt by user operation hash, reason: ${e.message}`);
+			throw new Error(`Error while getting transaction receipt by user operation hash, reason : ${e.message}`)
 		}
 	}
 }

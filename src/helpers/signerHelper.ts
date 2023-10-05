@@ -8,6 +8,10 @@ import axios from "axios";
 import { BastionSignerOptions, BasicTransaction } from "../modules/bastionConnect";
 import { createDummyTransactionReceipt } from "../helper";
 
+const reportError = ({message, cause}: {message: string, cause: string}) => {
+	throw new Error(message, {cause})
+  }
+
 const BASE_API_URL = "https://api.bastionwallet.io";
 const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 
@@ -96,8 +100,16 @@ export async function batchTransactionRouting(provider: JsonRpcProvider, transac
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		return await createTransactionResponse(signedUserOperation, res.userOperationHash, options?.apiKey || "");
 	} catch (error) {
-		console.error("Error in batchTransactionRouting:", error.message);
-		throw new Error(`batchTransactionRouting error: ${error.message}`);
+		
+		const errorType = error.message.split("~")[0]
+		if(errorType == "PAYMENT_SPONSORSHIP_ERR_ERC20"){
+			reportError({message : "Error while sending transaction through the bundler", cause: "BATCH_PAYMENT_SPONSORSHIP_ERR_ERC20"})
+		}else if(errorType == "PAYMENT_SPONSORSHIP_ERR"){
+			reportError({message : "Error while sending transaction through the bundler", cause : "BATCH_PAYMENT_SPONSORSHIP_ERR"})
+		}else {
+			console.error("Error in batchTransactionRouting:", error.message);
+			throw new Error(`batchTransactionRouting error: ${error.message}`);
+		}
 	}
 }
 
@@ -127,8 +139,15 @@ export async function transactionRouting(provider: JsonRpcProvider, transaction:
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		return await createTransactionResponse(signedUserOperation, res.userOperationHash, options?.apiKey || "");
 	} catch (error) {
-		console.error("Error in transactionRouting:", error.message);
-		throw new Error(`transactionRouting error: ${error.message}`);
+		const errorType = error.message.split("~")[0]
+		if(errorType == "PAYMENT_SPONSORSHIP_ERR_ERC20"){
+			reportError({message : "Error while sending transaction through the bundler", cause: "PAYMENT_SPONSORSHIP_ERR_ERC20"})
+		}else if(errorType == "PAYMENT_SPONSORSHIP_ERR"){
+			reportError({message : "Error while sending transaction through the bundler", cause : "PAYMENT_SPONSORSHIP_ERR"})
+		}else {
+			console.error("Error in transactionRouting:", error.message);
+			throw new Error(`transactionRouting error: ${error.message}`);
+		}
 	}
 }
 
