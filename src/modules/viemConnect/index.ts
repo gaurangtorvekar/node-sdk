@@ -1,8 +1,12 @@
 import axios from "axios";
 import { SmartWallet } from "../smart-wallet";
-import type {Abi,  Account, Client, PublicClient, WalletClient, Transport, Chain, EncodeFunctionDataParameters, Hex, ByteArray} from "viem"
-import {encodeFunctionData, createPublicClient, http, createWalletClient, getAddress} from 'viem';
-import {WriteContractReturnType, WriteContractParameters} from './type'
+import {Abi,  Account, Client, PublicClient, WalletClient, Transport, Chain, 
+    EncodeFunctionDataParameters, Hex, ByteArray, Address} from "viem"
+import {encodeFunctionData, createPublicClient, http, createWalletClient} from 'viem';
+import {WriteContractReturnType, WriteContractParameters, Hash, 
+    // sendRawTransaction, extract, getChainId, parseAccount
+} from './type'
+import type {TransactionSerializable, TransactionRequest} from 'viem'
 import { checkChainCompatibility } from "../../helper";
 import { ethers } from "ethers";
 import { transactionRouting, batchTransactionRouting } from "../../helpers/viemHelper";
@@ -143,4 +147,15 @@ export class ViemConnect {
             return error
         }
     }
+
+    async sendTransaction(address : Address, value: Number): Promise<Hash> {
+        const transaction : any = {
+            to: address,
+            value
+          }
+        
+        const res = await transactionRouting(this.publicClient, this.walletClient, transaction, this.options);
+        return res?.hash as `0x${string}` ;
+    }
+    
 }

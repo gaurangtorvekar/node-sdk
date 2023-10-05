@@ -1,7 +1,7 @@
-import { type } from "os"
+import {Client, Transport} from 'viem'
 import type {
     Abi, Address, Account, Chain, GetChain, ContractFunctionConfig,
-    GetValue, Hex, FormattedTransactionRequest, SendTransactionReturnType
+    GetValue, Hex, FormattedTransactionRequest, TransactionSerialized, ChainFormatter
 } from "viem"
 
 export type IsUndefined<T> = [undefined] extends [T] ? true : false
@@ -28,6 +28,11 @@ export type SendTransactionParameters<
 > &
   GetAccountParameter<TAccount> &
   GetChain<TChain, TChainOverride>
+
+export type Hash = `0x${string}`
+export type SendTransactionReturnType = Hash
+
+export type AssertRequestParameters = Partial<SendTransactionParameters<Chain>>
 
 
 export type WriteContractParameters<
@@ -75,4 +80,3 @@ export type UserOperationStructViem = {
 	paymasterAndData: `0x${string}`;
 	signature: `0x${string}`;
 };
-
