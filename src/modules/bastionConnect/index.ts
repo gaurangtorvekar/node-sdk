@@ -39,8 +39,14 @@ export class BastionConnect extends Signer {
 			throw new Error("API Key is required");
 		}
 
-		const response = await axios.get(`${this.BASE_API_URL}/v1/auth/validate-key/${apiKey}`);
-		if (!response.data.data.isValid) {
+		// // const response = await axios.get(`${this.BASE_API_URL}/v1/auth/validate-key/${apiKey}`);
+		// if (!response.data.data.isValid) {
+		// 	throw new Error("Invalid API Key");
+		// }
+
+		const response = await fetch(`${this.BASE_API_URL}/v1/auth/validate-key/${apiKey}`);
+		const res = await response.json();
+		if (!res.data.isValid) {
 			throw new Error("Invalid API Key");
 		}
 	}
