@@ -88,8 +88,15 @@ export async function batchTransactionRouting(publicClient: PublicClient, wallet
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		return await createTransactionResponse(signedUserOperation, res.userOperationHash, options?.apiKey || "");
 	} catch (error) {
-		console.error("Error in batchTransactionRouting:", error.message);
-		throw new Error(`batchTransactionRouting error: ${error.message}`);
+		const errorType = error.message.split("~")[0]
+		if(errorType == "PAYMENT_SPONSORSHIP_ERR_ERC20"){
+			reportError({message : "Error while sending transaction through the bundler", cause: "BATCH_PAYMENT_SPONSORSHIP_ERR_ERC20"})
+		}else if(errorType == "PAYMENT_SPONSORSHIP_ERR"){
+			reportError({message : "Error while sending transaction through the bundler", cause : "BATCH_PAYMENT_SPONSORSHIP_ERR"})
+		}else {
+			console.error("Error in batchTransactionRouting:", error.message);
+			throw new Error(`batchTransactionRouting error: ${error.message}`);
+		}
 	}
 }
 
@@ -119,8 +126,15 @@ export async function transactionRouting(publicClient: PublicClient, walletClien
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		return await createTransactionResponse(signedUserOperation, res.userOperationHash, options?.apiKey || "");
 	} catch (error) {
-		console.error("Error in transactionRouting:", error.message);
-		throw new Error(`transactionRouting error: ${error.message}`);
+		const errorType = error.message.split("~")[0]
+		if(errorType == "PAYMENT_SPONSORSHIP_ERR_ERC20"){
+			reportError({message : "Error while sending transaction through the bundler", cause: "PAYMENT_SPONSORSHIP_ERR_ERC20"})
+		}else if(errorType == "PAYMENT_SPONSORSHIP_ERR"){
+			reportError({message : "Error while sending transaction through the bundler", cause : "PAYMENT_SPONSORSHIP_ERR"})
+		}else {
+			console.error("Error in transactionRouting:", error.message);
+			throw new Error(`transactionRouting error: ${error.message}`);
+		}
 	}
 }
 

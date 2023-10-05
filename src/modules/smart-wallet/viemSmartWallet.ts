@@ -255,7 +255,7 @@ export class SmartWalletViem {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship");
 		} catch (error) {
-			throw error;
+			throw new Error(`PAYMENT_SPONSORSHIP_ERR~ Error while sending transaction through the bundler, reason: ${error.message}`);
 		}
 	}
 
@@ -263,7 +263,7 @@ export class SmartWalletViem {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
 		} catch (error) {
-			throw error;
+			throw new Error(`PAYMENT_SPONSORSHIP_ERR~ Error while sending transaction through the bundler, reason: ${error.message}`);
 		}
 	}
 
