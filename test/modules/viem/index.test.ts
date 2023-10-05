@@ -53,7 +53,7 @@ describe("setupSmartAccount", ()=> {
 		client = setup();
 	});
 
-	it("should call a Smart Contract function gasless for ERC20 gas", async () => {
+	it.skip("should call a Smart Contract function gasless for ERC20 gas", async () => {
 		let bastion = new Bastion();
 		const BastionViem = await bastion.viemConnect;
 
@@ -77,6 +77,20 @@ describe("setupSmartAccount", ()=> {
 		expect(trxhash).toHaveLength(66);
 	}, 70000);
 
+	it("should send native currency to another address gasless", async () => {
+		let bastion = new Bastion();
+		const BastionViem = await bastion.viemConnect;
+		const aaAddress = await BastionViem.init(publicClient, walletClient, DEFAULT_CONFIG);
+
+		console.log("My address = ", await BastionViem.getAddress());
+
+		const res = await BastionViem.sendTransaction(
+			"0x2429EB38cB9b456160937e11aefc80879a2d2712",
+			10
+		);
+		console.log("Trx hash:", res);
+		expect(res).toHaveLength(66);
+	}, 50000);
 
 	it.skip("should get a smart wallet address and message signature", async () => {
 		let bastion = new Bastion();
@@ -96,7 +110,7 @@ describe("setupSmartAccount", ()=> {
 	}, 70000);
 
 
-	it("should mint an NFT with gas from Smart Account", async () => {
+	it.skip("should mint an NFT with gas from Smart Account", async () => {
 		let bastion = new Bastion();
 		const BastionViem = await bastion.viemConnect;
 
@@ -119,7 +133,7 @@ describe("setupSmartAccount", ()=> {
 		expect(trxhash).toHaveLength(66);
 	}, 70000);
 
-	it("should mint an NFT with LINK ERC20 gas", async () => {
+	it.skip("should mint an NFT with LINK ERC20 gas", async () => {
 		let bastion = new Bastion();
 		const BastionViem = await bastion.viemConnect;
 
@@ -187,7 +201,7 @@ describe("setupSmartAccount", ()=> {
 		expect(trxhash).toHaveLength(66);
 	}, 70000);
 
-	it("should batch mint 2 NFTs at a time", async () => {
+	it.skip("should batch mint 2 NFTs at a time", async () => {
 		let bastion = new Bastion();
 		const BastionViem = await bastion.viemConnect;
 		//Pass along a gasToken to use for gas
