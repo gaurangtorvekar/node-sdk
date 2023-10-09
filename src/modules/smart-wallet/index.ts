@@ -69,7 +69,6 @@ export class SmartWallet {
 					},
 				);
 				const res = await response.json();
-				console.log(res);
 				return false;
 			} catch (error) {
 				return error;
@@ -234,11 +233,11 @@ export class SmartWallet {
 		}
 	}
 
-	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, apiKey: string): Promise<aaContracts.UserOperationStruct> {
+	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, apiKey: string): Promise<aaContracts.UserOperationStruct > {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship");
 		} catch (error) {
-			throw error;
+			throw new Error(`PAYMENT_SPONSORSHIP_ERR~ Error while sending transaction through the bundler, reason: ${error.message}`);
 		}
 	}
 
@@ -246,7 +245,7 @@ export class SmartWallet {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship-erc20", erc20Token);
 		} catch (error) {
-			throw error;
+			throw new Error(`PAYMENT_SPONSORSHIP_ERR_ERC20~ Error while sending transaction through the bundler, reason: ${error.message}`);
 		}
 	}
 
@@ -299,7 +298,7 @@ export class SmartWallet {
 			const trxReceipt = res?.data.trxReceipt.receipt.transactionHash;
 			return trxReceipt;
 		} catch (e) {
-			throw new Error(`Error while getting transaction receipt by user operation hash, reason: ${e.message}`);
+			throw new Error(`Error while getting transaction receipt by user operation hash, reason : ${e.message}`)
 		}
 	}
 }
