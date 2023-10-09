@@ -26,6 +26,8 @@ export class SmartWallet {
 			const address = await externalProvider.getSigner().getAddress();
 			signer = externalProvider.getSigner();
 		} catch (e) {
+			if(!options.privateKey)
+				throw new Error("ERROR::private key invalid/not provided")
 			signer = new Wallet(options.privateKey, externalProvider);
 		}
 
