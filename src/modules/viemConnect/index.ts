@@ -1,14 +1,9 @@
 import axios from "axios";
-import { SmartWallet } from "../smart-wallet";
-import {Abi,  Account, Client, PublicClient, WalletClient, Transport, Chain, 
+import {Abi,  Account, PublicClient, WalletClient, Chain, 
     EncodeFunctionDataParameters, Hex, ByteArray, Address} from "viem"
-import {encodeFunctionData, createPublicClient, http, createWalletClient} from 'viem';
-import {WriteContractReturnType, WriteContractParameters, Hash, 
-    // sendRawTransaction, extract, getChainId, parseAccount
-} from './type'
-import type {TransactionSerializable, TransactionRequest} from 'viem'
+import {encodeFunctionData} from 'viem';
+import {WriteContractReturnType, WriteContractParameters, Hash} from './type'
 import { checkChainCompatibility } from "../../helper";
-import { ethers } from "ethers";
 import { transactionRouting, batchTransactionRouting } from "../../helpers/viemHelper";
 import { SmartWalletViem } from "../smart-wallet/viemSmartWallet";
 export interface BastionViemOptions {
@@ -34,8 +29,9 @@ export class ViemConnect {
 			throw new Error("API Key is required");
 		}
 
-		const response = await axios.get(`${this.BASE_API_URL}/v1/auth/validate-key/${apiKey}`);
-		if (!response.data.data.isValid) {
+        const response = await fetch(`${this.BASE_API_URL}/v1/auth/validate-key/${apiKey}`);
+		const res = await response.json();
+		if (!res.data.isValid) {
 			throw new Error("Invalid API Key");
 		}
 	}
@@ -140,7 +136,6 @@ export class ViemConnect {
                 }
                 transactions.push(transaction);
             }
-            console.log("trx", transactions);
             const res = await batchTransactionRouting(this.publicClient, this.walletClient, transactions, this.options);
             return res?.hash as `0x${string}` ;
         } catch (error) {

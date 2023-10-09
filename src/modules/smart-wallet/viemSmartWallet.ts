@@ -50,19 +50,38 @@ export class SmartWalletViem {
 		const contractCode = await this.publicClient.getBytecode({address: smartAccountAddress});
 		const headers = {
 			"x-api-key": apiKey,
+			'Accept': 'application/json',
+      		'Content-Type': 'application/json'
 		};
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
 			try {
-				const response = await axios.post(
+				// const response = await axios.post(
+				// 	`${this.BASE_API_URL}/v1/transaction/create-account`,
+				// 	{
+				// 		chainId: chainId,
+				// 		eoa: clientAddress,
+				// 		salt: this.SALT,
+				// 	},
+				// 	{ headers }
+				// );
+				// return false;
+
+				const response = await fetch(
 					`${this.BASE_API_URL}/v1/transaction/create-account`,
 					{
-						chainId: chainId,
-						eoa: clientAddress,
-						salt: this.SALT,
+						method: "POST",
+						body: JSON.stringify(
+							{
+								chainId: chainId,
+								eoa: clientAddress,
+								salt: this.SALT,
+							}
+						),
+						headers
 					},
-					{ headers }
 				);
+				const res = await response.json();
 				return false;
 			} catch (error) {
 				return error;
@@ -241,9 +260,17 @@ export class SmartWalletViem {
 			if (erc20Token) payload["erc20Token"] = erc20Token;
 			const headers = {
 				"x-api-key": apiKey,
+				'Accept': 'application/json',
+      			'Content-Type': 'application/json'
 			};
-			const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload, { headers });
-			const updatedUserOperation = response?.data?.data?.paymasterDataResponse?.userOperation;
+			// const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload, { headers });
+			const response = await fetch(`${this.BASE_API_URL}${endpoint}`, {
+				method: "POST",
+				body: JSON.stringify(payload),
+				headers
+			});
+			const res = await response.json();
+			const updatedUserOperation = res?.data?.paymasterDataResponse?.userOperation;
 
 			return updatedUserOperation;
 		} catch (e) {
@@ -271,16 +298,32 @@ export class SmartWalletViem {
 		try {
 			const headers = {
 				"x-api-key": options.apiKey,
+				'Accept': 'application/json',
+      			'Content-Type': 'application/json'
 			};
-			const response = await axios.post(
-				`${this.BASE_API_URL}/v1/transaction/send-transaction`,
-				{
-					chainId: options.chainId,
-					userOperation: userOperation,
-				},
-				{ headers }
+			// const response = await axios.post(
+			// 	`${this.BASE_API_URL}/v1/transaction/send-transaction`,
+			// 	{
+			// 		chainId: options.chainId,
+			// 		userOperation: userOperation,
+			// 	},
+			// 	{ headers }
+			// );
+			// const sendTransactionResponse = response?.data.data.sendTransactionResponse;
+			const response = await fetch(
+				`${this.BASE_API_URL}/v1/transaction/send-transaction`,{
+					method: "POST",
+					body: JSON.stringify({
+						chainId: options.chainId,
+						userOperation: userOperation,
+					}),
+					headers 
+				}
 			);
-			const sendTransactionResponse = response?.data.data.sendTransactionResponse;
+
+			const res = await response.json();
+			const sendTransactionResponse = res?.data.sendTransactionResponse;
+			
 			return sendTransactionResponse;
 		} catch (e) {
 			throw new Error(`Error while sending transaction through the bundler, reason: ${e.message}`);
@@ -291,9 +334,16 @@ export class SmartWalletViem {
 		try {
 			const headers = {
 				"x-api-key": apiKey,
+				'Accept': 'application/json',
+      			'Content-Type': 'application/json'
 			};
-			const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
-			const trxReceipt = response?.data.data.trxReceipt.receipt.transactionHash;
+			// const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
+			const response = await fetch(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { 
+				method: "GET",
+				headers 
+			});
+			const res = await response.json();
+			const trxReceipt = res?.data.trxReceipt.receipt.transactionHash;
 			return trxReceipt;
 		} catch (e) {
 			throw new Error(`Error while getting transaction receipt by user operation hash, reason: ${e.message}`);
