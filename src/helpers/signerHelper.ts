@@ -36,6 +36,8 @@ async function initParams(provider: JsonRpcProvider, newOptions?: BastionSignerO
 		const address = await provider.getSigner().getAddress();
 		signer = provider.getSigner();
 	} catch (e) {
+		if(!options.privateKey)
+			throw new Error("private key invalid/not provided")
 		signer = new Wallet(options.privateKey, provider);
 	}
 
