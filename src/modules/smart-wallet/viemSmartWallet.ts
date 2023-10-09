@@ -54,7 +54,7 @@ export class SmartWalletViem {
       		'Content-Type': 'application/json'
 		};
 		// If the smart account has not been deployed, deploy it
-		if (contractCode === "0x") {
+		if (contractCode === "0x" || contractCode == undefined) {
 			try {
 				// const response = await axios.post(
 				// 	`${this.BASE_API_URL}/v1/transaction/create-account`,
@@ -82,6 +82,7 @@ export class SmartWalletViem {
 					},
 				);
 				const res = await response.json();
+				console.log(res);
 				return false;
 			} catch (error) {
 				return error;
