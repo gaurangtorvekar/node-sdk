@@ -30,6 +30,7 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 };
 
 const setup = () => {
+	//@ts-ignore
 	const wallet = new ethers.Wallet(DEFAULT_CONFIG.privateKey);
 	provider = new ethers.providers.JsonRpcProvider(DEFAULT_CONFIG.rpcUrl);
 	walletConnected = wallet.connect(provider);
@@ -119,17 +120,6 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 50000);
 
-	it.skip("should send native currency to another address gasless", async () => {
-		let bastion = new Bastion();
-		const bastionConnect = await bastion.bastionConnect;
-		await bastionConnect.init(provider, DEFAULT_CONFIG);
-
-		const res = await bastionConnect.sendTransaction({
-			to: "0x2429EB38cB9b456160937e11aefc80879a2d2712",
-			value: 10,
-		});
-		expect(res.hash).toHaveLength(66);
-	}, 50000);
 
 	it.skip("should withdraw from entry point", async () => {
 		let bastion = new Bastion();
