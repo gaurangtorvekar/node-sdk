@@ -33,7 +33,9 @@ export class SmartWallet {
 		const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
 		const signerAddress = await signer.getAddress();
 		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
-		await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
+		if (!options?.noSponsorship) {
+			await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
+		}
 		return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress };
 	}
 
@@ -41,8 +43,8 @@ export class SmartWallet {
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 		const headers = {
 			"x-api-key": apiKey,
-			'Accept': 'application/json',
-      		'Content-Type': 'application/json'
+			"Accept": "application/json",
+			"Content-Type": "application/json",
 		};
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
@@ -56,16 +58,11 @@ export class SmartWallet {
 				// 	},
 				// 	{ headers }
 				// );
-				const response = await fetch(
-					`${this.BASE_API_URL}/v1/transaction/create-account`,
-					{
-						method: "POST",
-						body: JSON.stringify({chainId: chainId,
-						eoa: signerAddress,
-						salt: this.SALT}),
-						headers
-					},
-				);
+				const response = await fetch(`${this.BASE_API_URL}/v1/transaction/create-account`, {
+					method: "POST",
+					body: JSON.stringify({ chainId: chainId, eoa: signerAddress, salt: this.SALT }),
+					headers,
+				});
 				const res = await response.json();
 				return false;
 			} catch (error) {
@@ -136,14 +133,9 @@ export class SmartWallet {
 			nonce = 0;
 		} else {
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
-		}		
+		}
 
-		const dummySignature = utils.hexConcat([
-			"0x00000000",
-			await signer.signMessage(
-			  utils.arrayify(utils.keccak256("0xdead"))
-			),
-		])
+		const dummySignature = utils.hexConcat(["0x00000000", await signer.signMessage(utils.arrayify(utils.keccak256("0xdead")))]);
 
 		const userOperation = {
 			sender: smartAccountAddress,
@@ -156,7 +148,7 @@ export class SmartWallet {
 			maxFeePerGas: utils.hexlify(gasPrice),
 			maxPriorityFeePerGas: utils.hexlify(gasPrice),
 			paymasterAndData: "0x",
-			signature: dummySignature, 
+			signature: dummySignature,
 		};
 		return userOperation;
 	}
@@ -213,14 +205,14 @@ export class SmartWallet {
 			if (erc20Token) payload["erc20Token"] = erc20Token;
 			const headers = {
 				"x-api-key": apiKey,
-				'Accept': 'application/json',
-      			'Content-Type': 'application/json'
+				"Accept": "application/json",
+				"Content-Type": "application/json",
 			};
 			// const response = await axios.post(`${this.BASE_API_URL}${endpoint}`, payload, { headers });
 			const response = await fetch(`${this.BASE_API_URL}${endpoint}`, {
 				method: "POST",
 				body: JSON.stringify(payload),
-				headers
+				headers,
 			});
 			const res = await response.json();
 			const updatedUserOperation = res?.data?.paymasterDataResponse?.userOperation;
@@ -251,8 +243,8 @@ export class SmartWallet {
 		try {
 			const headers = {
 				"x-api-key": options.apiKey,
-				'Accept': 'application/json',
-      			'Content-Type': 'application/json'
+				"Accept": "application/json",
+				"Content-Type": "application/json",
 			};
 			// const response = await axios.post(
 			// 	`${this.BASE_API_URL}/v1/transaction/send-transaction`,
@@ -262,16 +254,14 @@ export class SmartWallet {
 			// 	},
 			// 	{ headers }
 			// );
-			const response = await fetch(
-				`${this.BASE_API_URL}/v1/transaction/send-transaction`,{
-					method: "POST",
-					body: JSON.stringify({
-						chainId: options.chainId,
-						userOperation: userOperation,
-					}),
-					headers 
-				}
-			);
+			const response = await fetch(`${this.BASE_API_URL}/v1/transaction/send-transaction`, {
+				method: "POST",
+				body: JSON.stringify({
+					chainId: options.chainId,
+					userOperation: userOperation,
+				}),
+				headers,
+			});
 			const res = await response.json();
 			const sendTransactionResponse = res?.data.sendTransactionResponse;
 			return sendTransactionResponse;
@@ -284,13 +274,13 @@ export class SmartWallet {
 		try {
 			const headers = {
 				"x-api-key": apiKey,
-				'Accept': 'application/json',
-      			'Content-Type': 'application/json'
+				"Accept": "application/json",
+				"Content-Type": "application/json",
 			};
 			// const response = await axios.get(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { headers });
-			const response = await fetch(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, { 
+			const response = await fetch(`${this.BASE_API_URL}/v1/transaction/receipt/${chainId}/${userOpHash}`, {
 				method: "GET",
-				headers 
+				headers,
 			});
 			const res = await response.json();
 			const trxReceipt = res?.data.trxReceipt.receipt.transactionHash;
