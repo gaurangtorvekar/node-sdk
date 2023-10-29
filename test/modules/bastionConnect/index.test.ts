@@ -16,7 +16,7 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 	privateKey: process.env.PRIVATE_KEY || "",
 	// rpcUrl: process.env.RPC_URL1 || "", //mumbai
 	// chainId: 80001,
-	rpcUrl: process.env.RPC_URL_ARB_GOERLI || "", // arb-goerli
+	rpcUrl: process.env.RPC_URL2 || "", // arb-goerli
 	chainId: 421613,
 	// rpcUrl: process.env.RPC_URL3 || "", // scroll
 	// chainId: 534353,
@@ -30,7 +30,7 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 };
 
 const setup = () => {
-	const wallet = new ethers.Wallet(DEFAULT_CONFIG.privateKey);
+	const wallet = new ethers.Wallet(DEFAULT_CONFIG.privateKey || "");
 	provider = new ethers.providers.JsonRpcProvider(DEFAULT_CONFIG.rpcUrl);
 	walletConnected = wallet.connect(provider);
 	return walletConnected;
@@ -114,20 +114,9 @@ describe("setupSmartAccount", () => {
 
 		const res = await bastionConnect.sendTransaction({
 			to: "0x2429EB38cB9b456160937e11aefc80879a2d2712",
-			value: 10,
+			value: 4999999999999999,
 		});
-		expect(res.hash).toHaveLength(66);
-	}, 50000);
-
-	it.skip("should send native currency to another address gasless", async () => {
-		let bastion = new Bastion();
-		const bastionConnect = await bastion.bastionConnect;
-		await bastionConnect.init(provider, DEFAULT_CONFIG);
-
-		const res = await bastionConnect.sendTransaction({
-			to: "0x2429EB38cB9b456160937e11aefc80879a2d2712",
-			value: 10,
-		});
+		console.log("Hash for native transfer = ", res.hash);
 		expect(res.hash).toHaveLength(66);
 	}, 50000);
 
@@ -197,7 +186,7 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
+	it("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
 		let bastion = new Bastion();
 		const bastionConnect = await bastion.bastionConnect;
 
@@ -215,17 +204,18 @@ describe("setupSmartAccount", () => {
 		const transfer1 = {
 			to: contractAddress,
 			value: 0,
-			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 0]),
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 111]),
 		};
 
 		const transfer2 = {
 			to: contractAddress,
 			value: 0,
-			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 1]),
+			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 112]),
 		};
 
 		const transactionArray = [transfer1, transfer2];
 		const res = await bastionConnect.executeBatch(transactionArray);
+		console.log("res = ", res.hash);
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
@@ -246,6 +236,7 @@ describe("setupSmartAccount", () => {
 			// Sleep for 2 sec
 			await new Promise((r) => setTimeout(r, 2000));
 			const txnHash = await bastionConnect.getTransactionHash(res.hash);
+			console.log("Hash for NFT mint = ", txnHash);
 			expect(txnHash).toHaveLength(66);
 		} catch (error) {
 			console.log("error = ", error);
@@ -259,5 +250,21 @@ describe("setupSmartAccount", () => {
 		DEFAULT_CONFIG.chainId = 1234;
 		await expect(bastionConnect.init(provider, DEFAULT_CONFIG)).rejects.toThrow("Chain not supported");
 	});
+
+	it.skip("should not create a Smart Wallet when noSponsorship  is true", async () => {
+		let bastion = new Bastion();
+		const bastionConnect = await bastion.bastionConnect;
+
+		DEFAULT_CONFIG.noSponsorship = true;
+		await bastionConnect.init(provider, DEFAULT_CONFIG);
+
+		let address = await bastionConnect.getAddress();
+		console.log("address before = ", address);
+		if (!address) {
+			console.log("Creating Smart Account");
+			address = await bastionConnect.createSmartAccount();
+		}
+		console.log("address after = ", address);
+	}, 70000);
 });
 

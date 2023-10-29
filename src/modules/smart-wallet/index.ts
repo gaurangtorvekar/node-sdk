@@ -32,11 +32,29 @@ export class SmartWallet {
 		const entryPoint = aaContracts.EntryPoint__factory.connect(this.ENTRY_POINT_ADDRESS, signer);
 		const kernelAccountFactory = ECDSAKernelFactory__factory.connect(this.ECDSAKernelFactory_Address, signer);
 		const signerAddress = await signer.getAddress();
-		const smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
+		let smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
+		const contractCode = await externalProvider.getCode(smartAccountAddress);
+		if (contractCode === "0x") {
+			smartAccountAddress = "";
+		}
 		if (!options?.noSponsorship) {
 			await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
 		}
 		return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress };
+	}
+
+	async createSmartAccount(externalProvider: JsonRpcProvider, options?: BastionSignerOptions): Promise<string> {
+		const { signer, kernelAccountFactory, smartAccountAddress } = await this.initParams(externalProvider, options);
+
+		// Return early if smartAccountAddress already exists.
+		if (smartAccountAddress !== "") {
+			return smartAccountAddress;
+		}
+
+		const signerAddress = await signer.getAddress();
+		const createTx = await kernelAccountFactory.createAccount(signerAddress, this.SALT);
+		await createTx.wait();
+		return kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
 	}
 
 	async initSmartAccount(externalProvider: JsonRpcProvider, smartAccountAddress: string, signerAddress: string, chainId: number, apiKey: string): Promise<boolean> {
@@ -223,7 +241,7 @@ export class SmartWallet {
 		}
 	}
 
-	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, apiKey: string): Promise<aaContracts.UserOperationStruct > {
+	async getPaymasterSponsorship(chainId: number, userOperation: aaContracts.UserOperationStruct, apiKey: string): Promise<aaContracts.UserOperationStruct> {
 		try {
 			return await this.getSponsorship(apiKey, chainId, userOperation, "/v1/transaction/payment-sponsorship");
 		} catch (error) {
@@ -286,7 +304,7 @@ export class SmartWallet {
 			const trxReceipt = res?.data.trxReceipt.receipt.transactionHash;
 			return trxReceipt;
 		} catch (e) {
-			throw new Error(`Error while getting transaction receipt by user operation hash, reason : ${e.message}`)
+			throw new Error(`Error while getting transaction receipt by user operation hash, reason : ${e.message}`);
 		}
 	}
 }

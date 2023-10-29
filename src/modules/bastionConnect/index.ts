@@ -58,7 +58,7 @@ export class BastionConnect extends Signer {
 
 		const { signer, smartAccountAddress } = await this.smartWalletInstance.initParams(this.externalProvider, this.options);
 		this.signer = signer;
-		
+
 		return smartAccountAddress;
 	}
 
@@ -93,6 +93,10 @@ export class BastionConnect extends Signer {
 
 	async getTransactionHash(userOpHash: string): Promise<string> {
 		return getTransactionHash(this.externalProvider, userOpHash, this.options);
+	}
+
+	async createSmartAccount(): Promise<string> {
+		return this.smartWalletInstance.createSmartAccount(this.externalProvider, this.options);
 	}
 
 	connect(provider: Provider): ethers.Signer {
