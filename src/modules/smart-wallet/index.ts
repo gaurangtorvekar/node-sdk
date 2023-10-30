@@ -153,7 +153,7 @@ export class SmartWallet {
 			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 		}
 
-		const dummySignature = utils.hexConcat(["0x00000000", await signer.signMessage(utils.arrayify(utils.keccak256("0xdead")))]);
+		const dummySignature = "0x";
 
 		const userOperation = {
 			sender: smartAccountAddress,

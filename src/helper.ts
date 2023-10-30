@@ -3,6 +3,14 @@ import { BigNumber } from "ethers";
 
 export const getChainName = async (chainId) => {
 	switch (chainId) {
+		case 1: 
+			return "ethereum";
+		case 137: 
+			return "polygon";
+		case 42162:
+			return "arbiturm";
+		case 534352:
+			return "scroll";
 		case 80001:
 			return "polygon-mumbai";
 		case 421613:
