@@ -4,6 +4,7 @@ import { Wallet, utils, BigNumber } from "ethers";
 import axios from "axios";
 import { ECDSAKernelFactory__factory, Kernel__factory, BatchActions__factory } from "./contracts";
 import { BastionSignerOptions } from "../bastionConnect";
+import { get } from "http";
 
 export interface SendTransactionResponse {
 	bundler: string;
@@ -54,6 +55,22 @@ export class SmartWallet {
 		const signerAddress = await signer.getAddress();
 		const createTx = await kernelAccountFactory.createAccount(signerAddress, this.SALT);
 		await createTx.wait();
+
+		const kernel = await Kernel__factory.connect(smartAccountAddress, signer);
+		const executor = "0xaEA978bAa9357C7d2B3B2D243621B94ce3d5793F";
+		const batchActions = await BatchActions__factory.connect(executor, signer);
+		const executeBatchSelector = batchActions.interface.getSighash("executeBatch");
+		console.log("Selector for 'executeBatch':", executeBatchSelector);
+		const validator = "0x180D6465F921C7E0DEA0040107D342c87455fFF5";
+		//Valid until the year 2030
+		const validUntil = 1893456000;
+		// Get the current unix timestamp
+		const validAfter = await externalProvider.getBlock("latest").then((block) => block.timestamp);
+		const enableData = utils.defaultAbiCoder.encode(["address"], [signerAddress]);
+		console.log("Encoded data:", enableData);
+
+		const setExecutionTx = await kernel.setExecution(executeBatchSelector, executor, validator, validUntil, validAfter, enableData);
+
 		return kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
 	}
 
@@ -91,6 +108,27 @@ export class SmartWallet {
 		}
 	}
 
+	async getGasEstimates(chainId: Number, userOp: aaContracts.UserOperationStruct, apiKey: string): Promise<any> {
+		const headers = {
+			"x-api-key": apiKey,
+			"Accept": "application/json",
+			"Content-Type": "application/json",
+		};
+		console.log("Inside getGasEstimates", userOp);
+		try {
+			const response = await fetch(`${this.BASE_API_URL}/v1/transaction/estimate-gas`, {
+				method: "POST",
+				body: JSON.stringify({ chainId: chainId, userOperation: userOp }),
+				headers,
+			});
+			const res = await response.json();
+			console.log("Inside getGasEstimates", res);
+			return res;
+		} catch (error) {
+			return error;
+		}
+	}
+
 	async checkExecutionSet(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
 		const { smartAccountAddress, signer } = await this.initParams(externalProvider, options);
 		const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
@@ -124,9 +162,13 @@ export class SmartWallet {
 				packedData,
 			]);
 
-			const userOperation = await this.prepareTransaction(externalProvider, smartAccountAddress, 0, options, setExecutionCallData);
-			const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation, options.apiKey);
-			const signedUserOperation = await this.signUserOperation(externalProvider, sponsoredUserOperation, options);
+			let userOperation = await this.prepareTransaction(externalProvider, smartAccountAddress, 0, options, setExecutionCallData);
+			if (!options?.noSponsorship) {
+				const sponsoredUserOperation = await this.getPaymasterSponsorship(options.chainId, userOperation, options.apiKey);
+				userOperation = sponsoredUserOperation; // Update userOperation with sponsored one
+			}
+			const signedUserOperation = await this.signUserOperation(externalProvider, userOperation, options);
+
 			await this.sendTransaction(externalProvider, signedUserOperation, options);
 
 			// Check execution details again for sanity
@@ -140,7 +182,6 @@ export class SmartWallet {
 
 		// 0 = call, 1 = delegatecall (type of Operation)
 		const callData = kernelAccount.interface.encodeFunctionData("execute", [to, value, data, 0]);
-		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
 		const gasPrice = await externalProvider.getGasPrice();
 
 		// Check if the smart account contract has been deployed and setExecution has been called
@@ -160,7 +201,7 @@ export class SmartWallet {
 			nonce: utils.hexlify(nonce),
 			initCode: "0x",
 			callData,
-			callGasLimit: utils.hexlify(250_000),
+			callGasLimit: utils.hexlify(600_000),
 			verificationGasLimit: utils.hexlify(600_000),
 			preVerificationGas: utils.hexlify(200_000),
 			maxFeePerGas: utils.hexlify(gasPrice),
@@ -168,6 +209,7 @@ export class SmartWallet {
 			paymasterAndData: "0x",
 			signature: dummySignature,
 		};
+		// await this.getGasEstimates(options.chainId, userOperation, options.apiKey);
 		return userOperation;
 	}
 
@@ -195,9 +237,9 @@ export class SmartWallet {
 			nonce: utils.hexlify(nonce),
 			initCode: "0x",
 			callData,
-			callGasLimit: utils.hexlify(150_000),
-			verificationGasLimit: utils.hexlify(500_000),
-			preVerificationGas: utils.hexlify(100_000),
+			callGasLimit: utils.hexlify(600_000),
+			verificationGasLimit: utils.hexlify(600_000),
+			preVerificationGas: utils.hexlify(200_000),
 			maxFeePerGas: utils.hexlify(gasPrice),
 			maxPriorityFeePerGas: utils.hexlify(gasPrice),
 			paymasterAndData: "0x",
