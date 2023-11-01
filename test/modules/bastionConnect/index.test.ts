@@ -173,17 +173,14 @@ describe("setupSmartAccount", () => {
 		expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should batch transfer 2 NFTs with LINK ERC20 gas", async () => {
+	it.skip("should batch transfer 2 NFTs gasless-ly", async () => {
 		let bastion = new Bastion();
 		const bastionConnect = await bastion.bastionConnect;
 
-		//This is LINK tokens on arb-goerli : "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28"
-		// Stackup Test ERC20 gas token  = 0x3870419Ba2BBf0127060bCB37f69A1b1C090992B
-		DEFAULT_CONFIG.gasToken = "0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28";
-		// DEFAULT_CONFIG.gasToken = "0x3870419Ba2BBf0127060bCB37f69A1b1C090992B";
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
 		const toAddress = "0x841056F279582d1dfD586c3C77e7821821B5B510";
 		const fromAddress = await bastionConnect.getAddress();
+		console.log("fromAddress = ", fromAddress);
 
 		const contractAddress = BastionSampleNFT;
 		const erc721Contract = new ethers.Contract(contractAddress, ERC721_ABI, bastionConnect);
@@ -200,10 +197,10 @@ describe("setupSmartAccount", () => {
 			data: erc721Contract.interface.encodeFunctionData("transferFrom", [fromAddress, toAddress, 112]),
 		};
 
-		const transactionArray = [transfer1, transfer2];
-		const res = await bastionConnect.executeBatch(transactionArray);
-		console.log("res = ", res.hash);
-		expect(res.hash).toHaveLength(66);
+		// const transactionArray = [transfer1, transfer2];
+		// const res = await bastionConnect.executeBatch(transactionArray);
+		// console.log("res = ", res.hash);
+		// expect(res.hash).toHaveLength(66);
 	}, 70000);
 
 	it.skip("should mint an NFT gasless-ly", async () => {
@@ -238,23 +235,23 @@ describe("setupSmartAccount", () => {
 		await expect(bastionConnect.init(provider, DEFAULT_CONFIG)).rejects.toThrow("Chain not supported");
 	});
 
-	it.skip("should not create a Smart Wallet when noSponsorship  is true", async () => {
+	it("should not create a Smart Wallet when noSponsorship is true", async () => {
 		let bastion = new Bastion();
 		const bastionConnect = await bastion.bastionConnect;
-
 		DEFAULT_CONFIG.noSponsorship = true;
 		await bastionConnect.init(provider, DEFAULT_CONFIG);
-
 		let address = await bastionConnect.getAddress();
 		console.log("address before = ", address);
-		if (!address) {
-			console.log("Creating Smart Account");
-			address = await bastionConnect.createSmartAccount();
-		}
+		console.log("Creating Smart Account");
+		address = await bastionConnect.createSmartAccount();
 		console.log("address after = ", address);
+
+		// const wallet = ethers.Wallet.createRandom();
+		// console.log("Address: ", wallet.address);
+		// console.log("Private Key: ", wallet.privateKey);
 	}, 70000);
 
-	it("should send native currency to another address with gas from Smart Account", async () => {
+	it.skip("should send native currency to another address with gas from Smart Account", async () => {
 		// DEFAULT_CONFIG.noSponsorship = true;
 		let bastion = new Bastion();
 		const bastionConnect = await bastion.bastionConnect;

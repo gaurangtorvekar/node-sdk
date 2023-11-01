@@ -54,23 +54,22 @@ export class SmartWallet {
 
 		const signerAddress = await signer.getAddress();
 		const createTx = await kernelAccountFactory.createAccount(signerAddress, this.SALT);
-		await createTx.wait();
+		await createTx.wait(1);
 
-		const kernel = await Kernel__factory.connect(smartAccountAddress, signer);
+		const smartAccount = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
+		const kernel = await Kernel__factory.connect(smartAccount, signer);
 		const executor = "0xaEA978bAa9357C7d2B3B2D243621B94ce3d5793F";
 		const batchActions = await BatchActions__factory.connect(executor, signer);
 		const executeBatchSelector = batchActions.interface.getSighash("executeBatch");
-		console.log("Selector for 'executeBatch':", executeBatchSelector);
 		const validator = "0x180D6465F921C7E0DEA0040107D342c87455fFF5";
 		//Valid until the year 2030
 		const validUntil = 1893456000;
-		// Get the current unix timestamp
+		// Get the current block timestamp
 		const validAfter = await externalProvider.getBlock("latest").then((block) => block.timestamp);
 		const enableData = utils.defaultAbiCoder.encode(["address"], [signerAddress]);
-		console.log("Encoded data:", enableData);
 
 		const setExecutionTx = await kernel.setExecution(executeBatchSelector, executor, validator, validUntil, validAfter, enableData);
-
+		await setExecutionTx.wait();
 		return kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
 	}
 
@@ -84,15 +83,6 @@ export class SmartWallet {
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x") {
 			try {
-				// const response = await axios.post(
-				// 	`${this.BASE_API_URL}/v1/transaction/create-account`,
-				// 	{
-				// 		chainId: chainId,
-				// 		eoa: signerAddress,
-				// 		salt: this.SALT,
-				// 	},
-				// 	{ headers }
-				// );
 				const response = await fetch(`${this.BASE_API_URL}/v1/transaction/create-account`, {
 					method: "POST",
 					body: JSON.stringify({ chainId: chainId, eoa: signerAddress, salt: this.SALT }),
@@ -140,8 +130,8 @@ export class SmartWallet {
 		const executionDetails = await kernelAccount.getExecution(funcSignature);
 		// Only set the execution if it hasn't been set already
 		if (executionDetails[0] === 0) {
-			// Valid until 2030
-			const validUntil = 1893456000;
+			// Valid until 31st Dec 2050
+			const validUntil = 2524608000;
 
 			// Valid after current block timestamp
 			const block = await externalProvider.getBlock("latest");
