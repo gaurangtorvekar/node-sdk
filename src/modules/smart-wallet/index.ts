@@ -35,11 +35,13 @@ export class SmartWallet {
 		const signerAddress = await signer.getAddress();
 		let smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
-		if (contractCode === "0x") {
-			smartAccountAddress = "";
-		}
+		
 		if (!options?.noSponsorship) {
 			await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
+		} else{
+			if (contractCode === "0x") {
+				smartAccountAddress = "";
+			}
 		}
 		return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress };
 	}
@@ -89,6 +91,7 @@ export class SmartWallet {
 					headers,
 				});
 				const res = await response.json();
+				if(res.statusCode === "10001") throw new Error(res.message);
 				return false;
 			} catch (error) {
 				return error;
@@ -112,6 +115,7 @@ export class SmartWallet {
 				headers,
 			});
 			const res = await response.json();
+			if(res.statusCode === "10001") throw new Error(res.message);
 			console.log("Inside getGasEstimates", res);
 			return res;
 		} catch (error) {
@@ -265,6 +269,7 @@ export class SmartWallet {
 				headers,
 			});
 			const res = await response.json();
+			if(res.statusCode === "10001") throw new Error(res.message);
 			const updatedUserOperation = res?.data?.paymasterDataResponse?.userOperation;
 
 			return updatedUserOperation;
@@ -313,6 +318,7 @@ export class SmartWallet {
 				headers,
 			});
 			const res = await response.json();
+			if(res.statusCode === "10001") throw new Error(res.message);
 			const sendTransactionResponse = res?.data.sendTransactionResponse;
 			return sendTransactionResponse;
 		} catch (e) {
@@ -333,6 +339,7 @@ export class SmartWallet {
 				headers,
 			});
 			const res = await response.json();
+			if(res.statusCode === "10001") throw new Error(res.message);
 			const trxReceipt = res?.data.trxReceipt.receipt.transactionHash;
 			return trxReceipt;
 		} catch (e) {
