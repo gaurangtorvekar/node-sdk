@@ -55,7 +55,7 @@ export class SmartWallet {
 		}
 
 		const signerAddress = await signer.getAddress();
-		const createTx = await kernelAccountFactory.createAccount(signerAddress, this.SALT);
+		const createTx = await kernelAccountFactory.createAccount(signerAddress, this.SALT, {gasLimit:300000});
 		await createTx.wait(1);
 
 		const smartAccount = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
@@ -91,6 +91,7 @@ export class SmartWallet {
 					headers,
 				});
 				const res = await response.json();
+				console.log("res",res);
 				if(res.statusCode === "10001") throw new Error(res.message);
 				return false;
 			} catch (error) {
