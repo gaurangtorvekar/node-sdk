@@ -15,6 +15,8 @@ export const getChainName = async (chainId) => {
 			return "taiko-aplha-2-testnet";
 		case 84531:
 			return "base-goerli-testnet";
+		case 8453:
+			return "base";
 		case 420:
 			return "optimism-goerli";
 	}
