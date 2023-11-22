@@ -1,10 +1,12 @@
 import * as aaContracts from "@account-abstraction/contracts";
-import { WalletClient, PublicClient, getContract, encodeFunctionData } from "viem";
+import { WalletClient, PublicClient, getContract, encodeFunctionData, getFunctionSelector, Chain } from "viem";
+import { arbitrumGoerli } from "viem/chains";
 import { Wallet, utils, BigNumber } from "ethers";
 import axios from "axios";
 import { ECDSAKernelFactory__factory, Kernel__factory, BatchActions__factory } from "./contracts";
 import { BastionSignerOptions } from "../bastionConnect";
 import { UserOperationStructViem } from "../viemConnect/type";
+import { getViemChain, mainnetIds } from "../../helper";
 
 export interface SendTransactionResponse {
 	bundler: string;
@@ -21,12 +23,14 @@ export class SmartWalletViem {
 	BASE_API_URL = "https://api.bastionwallet.io";
 	SALT = 0;
 
-	walletClient: WalletClient;
-	publicClient: PublicClient;
+	walletClient:WalletClient;
+	publicClient:PublicClient;
+	chain: Chain;
 
 	async initParams(walletClient: WalletClient, publicClient: PublicClient,  options?: BastionSignerOptions) {
 		this.walletClient = walletClient;
 		this.publicClient = publicClient;
+		this.chain = await getViemChain(options.chainId);
 
         const entryPoint = getContract({
 			address: this.ENTRY_POINT_ADDRESS as `0x${string}`,
@@ -41,9 +45,18 @@ export class SmartWalletViem {
 			walletClient
 		})
 		const clientAddress = walletClient.account.address;
-		const smartAccountAddress: `0x${string}` = await kernelAccountFactory.read.getAccountAddress([clientAddress, BigInt(this.SALT)])
-		await this.initSmartAccount(smartAccountAddress, clientAddress, options.chainId, options.apiKey);
-		return { walletClient, publicClient, entryPoint, kernelAccountFactory, smartAccountAddress, clientAddress };
+		let smartAccountAddress: `0x${string}` = await kernelAccountFactory.read.getAccountAddress([clientAddress, BigInt(this.SALT)])
+		const contractCode = await this.publicClient.getBytecode({address: smartAccountAddress});
+
+		if (!options?.noSponsorship && (contractCode === "0x" || !contractCode)) {
+			if(mainnetIds.includes(options.chainId)){
+				return { clientAddress, kernelAccountFactory, smartAccountAddress: "0x" as `0x${string}`, exists: false};
+			}
+			await this.initSmartAccount(smartAccountAddress, clientAddress, options.chainId, options.apiKey);
+		} else if (contractCode === "0x" || !contractCode) {
+			return { walletClient, publicClient, entryPoint, kernelAccountFactory, smartAccountAddress: "0x" as`0x${string}`, clientAddress, exists: false };
+		}
+		return { walletClient, publicClient, entryPoint, kernelAccountFactory, smartAccountAddress, clientAddress, exists: true };
 	}
 
 	async initSmartAccount(smartAccountAddress: `0x${string}`, clientAddress: string, chainId: number, apiKey: string): Promise<boolean> {
@@ -56,16 +69,6 @@ export class SmartWalletViem {
 		// If the smart account has not been deployed, deploy it
 		if (contractCode === "0x" || contractCode == undefined) {
 			try {
-				// const response = await axios.post(
-				// 	`${this.BASE_API_URL}/v1/transaction/create-account`,
-				// 	{
-				// 		chainId: chainId,
-				// 		eoa: clientAddress,
-				// 		salt: this.SALT,
-				// 	},
-				// 	{ headers }
-				// );
-				// return false;
 
 				const response = await fetch(
 					`${this.BASE_API_URL}/v1/transaction/create-account`,
@@ -83,6 +86,7 @@ export class SmartWalletViem {
 				);
 				const res = await response.json();
 				console.log(res);
+				if(res.statusCode === "10001") throw new Error(res.message);
 				return false;
 			} catch (error) {
 				return error;
@@ -93,8 +97,8 @@ export class SmartWalletViem {
 	}
 
 	async checkExecutionSet(publicClient: PublicClient, walletClient: WalletClient, options?: BastionSignerOptions) {
-		const { smartAccountAddress } = await this.initParams(walletClient, publicClient, options);
-
+		const { smartAccountAddress, exists } = await this.initParams(walletClient, publicClient, options);
+		if(!exists) throw new Error("smart account doesn't exist, please create smart account first");
 		const kernelAccount = getContract({
 			address: smartAccountAddress,
 			abi: Kernel__factory.abi,
@@ -146,7 +150,9 @@ export class SmartWalletViem {
 	}
 
 	async prepareTransaction(publicClient: PublicClient, walletClient: WalletClient, to: `0x${string}`, value: number, options?: BastionSignerOptions, data?: `0x${string}`): Promise<aaContracts.UserOperationStruct> {
-		const { smartAccountAddress, entryPoint, clientAddress } = await this.initParams(walletClient, publicClient, options);
+		const { smartAccountAddress, entryPoint, clientAddress, exists } = await this.initParams(walletClient, publicClient, options);
+		if(!exists) throw new Error("smart account doesn't exist, please create smart account first");
+		
 		const kernelAccount = getContract({
 			address: smartAccountAddress,
 			abi: Kernel__factory.abi,
@@ -199,7 +205,8 @@ export class SmartWalletViem {
 	}
 
 	async prepareBatchTransaction(publicClient: PublicClient, walletClient: WalletClient, to: `0x${string}`[], data: `0x${string}`[], value:readonly bigint[], options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
-		const { smartAccountAddress, entryPoint, clientAddress } = await this.initParams(walletClient, publicClient, options);
+		const { smartAccountAddress, entryPoint, clientAddress, exists } = await this.initParams(walletClient, publicClient, options);
+		if(!exists) throw new Error("smart account doesn't exist, please create smart account first");
 		
 		const batchActions = getContract({
 			address: smartAccountAddress,
@@ -243,7 +250,8 @@ export class SmartWalletViem {
 	}
 
 	async signUserOperation(publicClient: PublicClient, walletClient: WalletClient, userOperation: UserOperationStructViem, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
-		const { entryPoint, clientAddress } = await this.initParams(walletClient, publicClient, options);
+		const { entryPoint, clientAddress,exists } = await this.initParams(walletClient, publicClient, options);
+		if(!exists) throw new Error("smart account doesn't exist, please create smart account first");
 		const signature = await walletClient.signMessage({
 			account: walletClient.account,
 			message: { raw: await entryPoint.read.getUserOpHash([userOperation])}
@@ -271,6 +279,7 @@ export class SmartWalletViem {
 				headers
 			});
 			const res = await response.json();
+			if(res.statusCode === "10001") throw new Error(res.message);
 			const updatedUserOperation = res?.data?.paymasterDataResponse?.userOperation;
 
 			return updatedUserOperation;
@@ -323,6 +332,7 @@ export class SmartWalletViem {
 			);
 
 			const res = await response.json();
+			if(res.statusCode === "10001") throw new Error(res.message);
 			const sendTransactionResponse = res?.data.sendTransactionResponse;
 			
 			return sendTransactionResponse;
@@ -344,11 +354,93 @@ export class SmartWalletViem {
 				headers 
 			});
 			const res = await response.json();
+			if(res.statusCode === "10001") throw new Error(res.message);
 			const trxReceipt = res?.data.trxReceipt.receipt.transactionHash;
 			return trxReceipt;
 		} catch (e) {
 			throw new Error(`Error while getting transaction receipt by user operation hash, reason: ${e.message}`);
 		}
+	}
+
+	async createSmartAccountDapp(options?: BastionSignerOptions): Promise<string>{
+		let { clientAddress, exists, smartAccountAddress } = await this.initParams(this.walletClient, this.publicClient, options);
+		const headers = {
+			"x-api-key": options.apiKey,
+			'Accept': 'application/json',
+      		'Content-Type': 'application/json'
+		};
+		// If the smart account has not been deployed, deploy it
+		if (!exists) {
+			try {
+
+				const response = await fetch(
+					`${this.BASE_API_URL}/v1/transaction/create-account`,
+					{
+						method: "POST",
+						body: JSON.stringify(
+							{
+								chainId: options.chainId,
+								eoa: clientAddress,
+								salt: this.SALT,
+							}
+						),
+						headers
+					},
+				);
+				const res = await response.json();
+				console.log(res);
+				if(res.statusCode === "10001") throw new Error(res.message);
+				return res.data.createAccountResponse.smartAccountAddress;
+			} catch (error) {
+				return error;
+			}
+		} else {
+			return smartAccountAddress;
+		}
+	}
+
+	async createSmartAccount(options?: BastionSignerOptions): Promise<string> {
+		let { clientAddress, kernelAccountFactory, smartAccountAddress,exists } = await this.initParams(this.walletClient, this.publicClient, options);
+		// Return early if smartAccountAddress already exists.
+		const balance = await this.publicClient.getBalance({ 
+			address: clientAddress,
+		  })
+		if(balance.toString() === "0") throw new Error("insufficient funds in EOA to create account");
+		if (smartAccountAddress !== "0x") {
+			return smartAccountAddress;
+		}
+		
+		const signerAddress: `0x${string}` = clientAddress;
+		const createTx = await this.walletClient.writeContract({
+			address: this.ECDSAKernelFactory_Address as `0x${string}`,
+			abi: ECDSAKernelFactory__factory.abi,
+			functionName: "createAccount",
+			args: [signerAddress, BigInt(this.SALT)],
+			account: this.walletClient.account,
+			chain: this.chain
+		})
+		smartAccountAddress= await kernelAccountFactory.read.getAccountAddress([clientAddress, BigInt(this.SALT)]);
+
+		const executor = "0xaEA978bAa9357C7d2B3B2D243621B94ce3d5793F";
+		const executeBatchSelector = getFunctionSelector("executeBatch(address[] to, uint256[] value, bytes[] data, Operation operation)");
+		const validator = "0x180D6465F921C7E0DEA0040107D342c87455fFF5";
+		//Valid until the year 2030
+		const validUntil = 1893456000;
+		// Get the current block timestamp
+		const validAfter = await this.publicClient.getBlock().then((block) => block.timestamp);
+		const enableData = utils.defaultAbiCoder.encode(["address"], [signerAddress]) as `0x${string}`;
+
+
+		const setExecutionTrx = await this.walletClient.writeContract({
+			address: smartAccountAddress,
+			abi: Kernel__factory.abi,
+			functionName: "setExecution",
+			args:[executeBatchSelector, executor, validator, validUntil, validAfter, enableData],
+			chain: this.chain,
+			account: this.walletClient.account,
+		}) 
+
+		return smartAccountAddress
 	}
 }
 

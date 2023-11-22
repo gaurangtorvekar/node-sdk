@@ -46,13 +46,13 @@ export class ViemConnect {
         this.smartWalletInstance = new SmartWalletViem();
 		this.options = { ...options, chainId };
 
-		const {  smartAccountAddress } = await this.smartWalletInstance.initParams(walletClient, publicClient, this.options);
-        return smartAccountAddress;        
+		const {  smartAccountAddress, exists } = await this.smartWalletInstance.initParams(walletClient, publicClient, this.options);
+        return {smartAccountAddress, exists};        
     }
 
-    async getAddress(): Promise<string> {
-		const { smartAccountAddress } = await this.smartWalletInstance.initParams(this.walletClient, this.publicClient, this.options);
-		return smartAccountAddress;
+    async getAddress(){
+		const { smartAccountAddress, exists } = await this.smartWalletInstance.initParams(this.walletClient, this.publicClient, this.options);
+		return {smartAccountAddress, exists};
 	}
 
     async signMessage(message: string | { raw: Hex | ByteArray }, account?: Account, ): Promise<Hex> {
@@ -152,5 +152,13 @@ export class ViemConnect {
         const res = await transactionRouting(this.publicClient, this.walletClient, transaction, this.options);
         return res?.hash as `0x${string}` ;
     }
+
+    async createSmartAccount(): Promise<string> {
+		return this.smartWalletInstance.createSmartAccount(this.options);
+	}
+
+    async createSmartAccountByDapp(): Promise<string> {
+		return this.smartWalletInstance.createSmartAccountDapp(this.options);
+	}
     
 }
