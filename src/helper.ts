@@ -1,6 +1,10 @@
 import { TransactionReceipt } from "@ethersproject/providers";
 import { BigNumber } from "ethers";
 
+
+
+export const mainnetIds = [1,137,42162,534352,8453];
+
 export const getChainName = async (chainId) => {
 	switch (chainId) {
 		case 1: 
