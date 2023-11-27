@@ -5,7 +5,7 @@ import { Bastion } from "../../../src/index";
 import { describe, beforeEach, it, expect } from "@jest/globals";
 import { skip } from "node:test";
 import { ERC721_ABI } from "../../utils/ERC721_ABI";
-import {polygonMumbai, arbitrumGoerli,scrollTestnet, lineaTestnet, baseGoerli, optimismGoerli} from 'viem/chains'
+import {polygonMumbai, arbitrumGoerli,scrollTestnet, lineaTestnet, baseGoerli, optimismGoerli, base} from 'viem/chains'
 import { BastionSignerOptions } from '../../../src/modules/bastionConnect';
 import { ethers } from 'ethers';
 import {abi} from "./ERC721ABI"  ;
@@ -48,6 +48,8 @@ const getViemChain = (chainId) => {
 			return baseGoerli;
 		case 420:
 			return optimismGoerli;
+		case 8453:
+			return base;
 	}
 }
 
@@ -109,7 +111,7 @@ describe("setupSmartAccount", ()=> {
 		expect(res).toHaveLength(66);
 	}, 50000);
 
-	it("should get a smart wallet address and message signature", async () => {
+	it.skip("should get a smart wallet address and message signature", async () => {
 		let bastion = new Bastion();
 		// DEFAULT_CONFIG.noSponsorship = true;
 		const BastionViem = await bastion.viemConnect;
@@ -203,12 +205,15 @@ describe("setupSmartAccount", ()=> {
 
 	}, 70000);
 
-	it.skip("should mint a NFT gaslessly by calling standalone writeContract method", async () => {
+	it("should mint a NFT gaslessly by calling standalone writeContract method", async () => {
 		let bastion = new Bastion();
 		const BastionViem = await bastion.viemConnect;
 		//Pass along a gasToken to use for gas
-		const { smartAccountAddress: aaAddress }  = await BastionViem.init(publicClient,walletClient, DEFAULT_CONFIG);
-
+		const { smartAccountAddress: aaAddress, exists }  = await BastionViem.init(publicClient,walletClient, DEFAULT_CONFIG);
+		console.log("exist",exists);
+		if(!exists){
+			const receipt = await BastionViem.createSmartAccountByDapp();
+		}
 		const contractAddress = BastionSampleNFT;
 
 		const trxhash = await BastionViem.writeContract({

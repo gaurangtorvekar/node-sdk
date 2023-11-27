@@ -50,11 +50,11 @@ export class SmartWalletViem {
 
 		if (!options?.noSponsorship && (contractCode === "0x" || !contractCode)) {
 			if(mainnetIds.includes(options.chainId)){
-				return { clientAddress, kernelAccountFactory, smartAccountAddress: "0x" as `0x${string}`, exists: false};
+				return { clientAddress, kernelAccountFactory, smartAccountAddress, exists: false};
 			}
 			await this.initSmartAccount(smartAccountAddress, clientAddress, options.chainId, options.apiKey);
 		} else if (contractCode === "0x" || !contractCode) {
-			return { walletClient, publicClient, entryPoint, kernelAccountFactory, smartAccountAddress: "0x" as`0x${string}`, clientAddress, exists: false };
+			return { walletClient, publicClient, entryPoint, kernelAccountFactory, smartAccountAddress, clientAddress, exists: false };
 		}
 		return { walletClient, publicClient, entryPoint, kernelAccountFactory, smartAccountAddress, clientAddress, exists: true };
 	}
@@ -305,6 +305,8 @@ export class SmartWalletViem {
 	}
 
 	async sendTransaction(userOperation: UserOperationStructViem, options?: BastionSignerOptions): Promise<SendTransactionResponse> {
+		const { exists } = await this.initParams(this.walletClient, this.publicClient, options);
+		if(!exists) throw new Error("smart account doesn't exist, please create smart account first");
 		try {
 			const headers = {
 				"x-api-key": options.apiKey,
@@ -406,7 +408,7 @@ export class SmartWalletViem {
 			address: clientAddress,
 		  })
 		if(balance.toString() === "0") throw new Error("insufficient funds in EOA to create account");
-		if (smartAccountAddress !== "0x") {
+		if (exists) {
 			return smartAccountAddress;
 		}
 		
