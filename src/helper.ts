@@ -5,6 +5,10 @@ import { mainnet, polygon, arbitrum, base, polygonMumbai, arbitrumGoerli, baseGo
 
 export const mainnetIds = [1,137,42162,534352,8453];
 
+
+
+export const mainnetIds = [1,137,42162,534352,8453];
+
 export const getChainName = async (chainId) => {
 	switch (chainId) {
 		case 1: 

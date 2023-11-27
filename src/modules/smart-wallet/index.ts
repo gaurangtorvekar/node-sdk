@@ -4,8 +4,7 @@ import { Wallet, utils, BigNumber } from "ethers";
 import axios from "axios";
 import { ECDSAKernelFactory__factory, Kernel__factory, BatchActions__factory } from "./contracts";
 import { BastionSignerOptions } from "../bastionConnect";
-import { get } from "http";
-
+import { mainnetIds } from "../../helper";
 export interface SendTransactionResponse {
 	bundler: string;
 	bundlerURL: string;
@@ -36,21 +35,22 @@ export class SmartWallet {
 		let smartAccountAddress = await kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
 		
-		if (!options?.noSponsorship) {
-			await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
-		} else{
-			if (contractCode === "0x") {
-				smartAccountAddress = "";
+		if (!options?.noSponsorship && (contractCode === "0x" || !contractCode)) {
+			if(mainnetIds.includes(options.chainId)){
+				return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress, exists: false };
 			}
+			await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
+		} else  if (contractCode === "0x" || !contractCode){
+			return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress, exists: false };
 		}
-		return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress };
+		return { signer, entryPoint, kernelAccountFactory, smartAccountAddress, signerAddress, exists: true };
 	}
 
 	async createSmartAccount(externalProvider: JsonRpcProvider, options?: BastionSignerOptions): Promise<string> {
-		const { signer, kernelAccountFactory, smartAccountAddress } = await this.initParams(externalProvider, options);
+		const { signer, kernelAccountFactory, smartAccountAddress, exists } = await this.initParams(externalProvider, options);
 
 		// Return early if smartAccountAddress already exists.
-		if (smartAccountAddress !== "") {
+		if (exists) {
 			return smartAccountAddress;
 		}
 
@@ -74,6 +74,43 @@ export class SmartWallet {
 		await setExecutionTx.wait();
 		return kernelAccountFactory.getAccountAddress(signerAddress, this.SALT);
 	}
+
+	async createSmartAccountDapp(externalProvider: JsonRpcProvider, options?: BastionSignerOptions): Promise<string>{
+		const { signerAddress, smartAccountAddress, exists } = await this.initParams(externalProvider, options);
+		const headers = {
+			"x-api-key": options.apiKey,
+			'Accept': 'application/json',
+      		'Content-Type': 'application/json'
+		};
+		// If the smart account has not been deployed, deploy it
+		if (!exists) {
+			try {
+				const response = await fetch(
+					`${this.BASE_API_URL}/v1/transaction/create-account`,
+					{
+						method: "POST",
+						body: JSON.stringify(
+							{
+								chainId: options.chainId,
+								eoa: signerAddress,
+								salt: this.SALT,
+							}
+						),
+						headers
+					},
+				);
+				const res = await response.json();
+				console.log(res);
+				if(res.statusCode === "10001") throw new Error(res.message);
+				return res.data.createAccountResponse.smartAccountAddress;
+			} catch (error) {
+				return error;
+			}
+		} else {
+			return smartAccountAddress;
+		}
+	}
+
 
 	async initSmartAccount(externalProvider: JsonRpcProvider, smartAccountAddress: string, signerAddress: string, chainId: number, apiKey: string): Promise<boolean> {
 		const contractCode = await externalProvider.getCode(smartAccountAddress);
@@ -125,7 +162,9 @@ export class SmartWallet {
 	}
 
 	async checkExecutionSet(externalProvider: JsonRpcProvider, options?: BastionSignerOptions) {
-		const { smartAccountAddress, signer } = await this.initParams(externalProvider, options);
+		const { smartAccountAddress, signer, exists } = await this.initParams(externalProvider, options);
+		if(!exists) throw new Error("smart account doesn't exist, please create smart account first");
+
 		const kernelAccount = await Kernel__factory.connect(smartAccountAddress, signer);
 
 		const batchActionsInterface = new utils.Interface(["function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, uint8 operation) external"]);
@@ -172,7 +211,9 @@ export class SmartWallet {
 	}
 
 	async prepareTransaction(externalProvider: JsonRpcProvider, to: string, value: number, options?: BastionSignerOptions, data?: string): Promise<aaContracts.UserOperationStruct> {
-		const { smartAccountAddress, entryPoint, signerAddress, signer } = await this.initParams(externalProvider, options);
+		const { smartAccountAddress, entryPoint, signerAddress, signer, exists } = await this.initParams(externalProvider, options);
+		if(!exists) throw new Error("smart account doesn't exist, please create smart account first");
+
 		const kernelAccount = Kernel__factory.connect(smartAccountAddress, externalProvider);
 
 		// 0 = call, 1 = delegatecall (type of Operation)
@@ -180,15 +221,16 @@ export class SmartWallet {
 		const gasPrice = await externalProvider.getGasPrice();
 
 		// Check if the smart account contract has been deployed and setExecution has been called
-		const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
+		// const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
 
-		let nonce;
-		if (!smartWalletDeployed) {
-			nonce = 0;
-		} else {
-			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
-		}
+		// let nonce;
+		// if (!smartWalletDeployed) {
+		// 	nonce = 0;
+		// } else {
+		// 	nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
+		// }
 
+		const nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
 		const dummySignature = "0x";
 
 		const userOperation = {
@@ -209,7 +251,9 @@ export class SmartWallet {
 	}
 
 	async prepareBatchTransaction(externalProvider: JsonRpcProvider, to: string[], data: string[], value: number[], options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
-		const { smartAccountAddress, entryPoint, signerAddress } = await this.initParams(externalProvider, options);
+		const { smartAccountAddress, entryPoint, signerAddress, exists } = await this.initParams(externalProvider, options);
+		if(!exists) throw new Error("smart account doesn't exist, please create smart account first");
+
 		const batchActions = BatchActions__factory.connect(smartAccountAddress, externalProvider);
 
 		// 0 = call, 1 = delegatecall (type of Operation)
@@ -217,16 +261,20 @@ export class SmartWallet {
 		// let initCode = utils.hexConcat([this.ECDSAKernelFactory_Address, kernelAccountFactory.interface.encodeFunctionData("createAccount", [signerAddress, this.SMART_ACCOUNT_SALT])]);
 		const gasPrice = await externalProvider.getGasPrice();
 
-		// Check if the smart account contract has been deployed and setExecution has been called
-		const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
-		await this.checkExecutionSet(externalProvider, options);
+		// // Check if the smart account contract has been deployed and setExecution has been called
+		// const smartWalletDeployed = await this.initSmartAccount(externalProvider, smartAccountAddress, signerAddress, options.chainId, options.apiKey);
+		// await this.checkExecutionSet(externalProvider, options);
 
-		let nonce;
-		if (!smartWalletDeployed) {
-			nonce = 0;
-		} else {
-			nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
-		}
+		// let nonce;
+		// if (!smartWalletDeployed) {
+		// 	nonce = 0;
+		// } else {
+		// 	nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
+		// }
+
+		await this.checkExecutionSet(externalProvider, options);
+		const nonce = await entryPoint.callStatic.getNonce(smartAccountAddress, 0);
+
 		const userOperation = {
 			sender: smartAccountAddress,
 			nonce: utils.hexlify(nonce),
@@ -244,7 +292,8 @@ export class SmartWallet {
 	}
 
 	async signUserOperation(externalProvider: JsonRpcProvider, userOperation: aaContracts.UserOperationStruct, options?: BastionSignerOptions): Promise<aaContracts.UserOperationStruct> {
-		const { signer, entryPoint } = await this.initParams(externalProvider, options);
+		const { signer, entryPoint, exists } = await this.initParams(externalProvider, options);
+		if(!exists) throw new Error("smart account doesn't exist, please create smart account first");
 
 		const signature = await signer.signMessage(utils.arrayify(await entryPoint.getUserOpHash(userOperation)));
 		const padding = "0x00000000";
