@@ -8,6 +8,8 @@ module.exports = {
 		library: "BastionWallet",
 		libraryTarget: "umd", // supports both CommonJS and AMD
 		globalObject: "this",
+		publicPath: '',
+		chunkFilename: "BastionWallet.bundle.js",
 	},
 	resolve: {
 		extensions: [".ts", ".tsx", ".js"],
@@ -21,5 +23,5 @@ module.exports = {
 			},
 		],
 	},
+	target: 'web',
 };
-
