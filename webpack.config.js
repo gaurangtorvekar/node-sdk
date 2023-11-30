@@ -1,4 +1,5 @@
 const path = require("path");
+const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
 	entry: "./src/index.ts", // The entry point of your library
@@ -21,5 +22,6 @@ module.exports = {
 			},
 		],
 	},
-	target: 'node'
+	target: 'node',
+	externals: [nodeExternals()],
 };
