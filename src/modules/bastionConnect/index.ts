@@ -56,15 +56,20 @@ export class BastionConnect extends Signer {
 		this.externalProvider = externalProvider;
 		this.options = { ...options, chainId };
 
-		const { signer, smartAccountAddress } = await this.smartWalletInstance.initParams(this.externalProvider, this.options);
+		const { signer, smartAccountAddress, exists } = await this.smartWalletInstance.initParams(this.externalProvider, this.options);
 		this.signer = signer;
 
-		return smartAccountAddress;
+		return {smartAccountAddress, exists};
 	}
 
 	async getAddress(): Promise<string> {
-		const { smartAccountAddress } = await this.smartWalletInstance.initParams(this.externalProvider, this.options);
+		const { smartAccountAddress, exists } = await this.smartWalletInstance.initParams(this.externalProvider, this.options);
 		return smartAccountAddress;
+	}
+
+	async getSmartAccountAddress(): Promise<{smartAccountAddress:string, exists: boolean}> {
+		const { smartAccountAddress, exists } = await this.smartWalletInstance.initParams(this.externalProvider, this.options);
+		return  { smartAccountAddress, exists };
 	}
 
 	async getSigner(): Promise<Signer> {
@@ -97,6 +102,10 @@ export class BastionConnect extends Signer {
 
 	async createSmartAccount(): Promise<string> {
 		return this.smartWalletInstance.createSmartAccount(this.externalProvider, this.options);
+	}
+
+	async createSmartAccountByDapp(): Promise<string> {
+		return this.smartWalletInstance.createSmartAccountDapp(this.externalProvider, this.options);
 	}
 
 	connect(provider: Provider): ethers.Signer {

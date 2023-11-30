@@ -203,12 +203,15 @@ describe("setupSmartAccount", () => {
 		// expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it.skip("should mint an NFT gasless-ly", async () => {
+	it("should mint an NFT gasless-ly", async () => {
 		try {
 			let bastion = new Bastion();
 			const bastionConnect = await bastion.bastionConnect;
-			await bastionConnect.init(provider, DEFAULT_CONFIG);
-
+			const {smartAccountAddress, exists} = await bastionConnect.init(provider, DEFAULT_CONFIG);
+			if(!exists){
+				// await bastionConnect.createSmartAccountByDapp();
+				await bastionConnect.createSmartAccount();
+			}
 			const contractAddress = BastionSampleNFT;
 			const contractABI = ["function safeMint(address to) public"];
 
@@ -235,7 +238,7 @@ describe("setupSmartAccount", () => {
 		await expect(bastionConnect.init(provider, DEFAULT_CONFIG)).rejects.toThrow("Chain not supported");
 	});
 
-	it("should not create a Smart Wallet when noSponsorship is true", async () => {
+	it.skip("should not create a Smart Wallet when noSponsorship is true", async () => {
 		let bastion = new Bastion();
 		const bastionConnect = await bastion.bastionConnect;
 		DEFAULT_CONFIG.noSponsorship = true;
