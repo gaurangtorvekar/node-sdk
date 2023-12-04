@@ -1,6 +1,6 @@
 {
-	"name": "bastion-wallet-node-sdk",
-	"version": "0.1.0-public-alpha.1",
+	"name": "bastion-node-sdk",
+	"version": "0.1.0-public-alpha.2",
 	"description": "Bastion SDK: A modular, open-source TypeScript SDK for seamless integration of multi-chain wallet functionality. Simplify decentralized app development with unified accounts, built-in multi-signature support, and more. ERC4337-compatible.",
 	"main": "dist/bastion-wallet.js",
 	"types": "dist/index.d.ts",
@@ -44,6 +44,8 @@
 		"@ethersproject/providers": "^5.7.2",
 		"axios": "^1.4.0",
 		"ethers": "^5.7.2",
-		"viem": "1.13.1"
+		"viem": "1.13.1",
+		"webpack-node-externals": "^3.0.0"
 	}
 }
+
