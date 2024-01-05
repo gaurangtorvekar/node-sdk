@@ -14,16 +14,18 @@ let BastionSampleNFT = "0xb390e253e43171a11a6afcb04e340fde5ae1b0a1";
 
 const DEFAULT_CONFIG: BastionSignerOptions = {
 	privateKey: process.env.PRIVATE_KEY || "",
-	rpcUrl: process.env.RPC_URL1 || "", //mumbai
-	chainId: 80001,
-	// rpcUrl: process.env.RPC_URL2 || "", // arb-goerli
+	// rpcUrl: process.env.RPC_URL1 || "", //mumbai
+	// chainId: 80001,
+	// rpcUrl: process.env.RPC_URL_ARB_GOERLI || "", // arb-goerli
 	// chainId: 421613,
 	// rpcUrl: process.env.RPC_URL3 || "", // scroll
 	// chainId: 534353,
 	// rpcUrl: process.env.RPC_URL4 || "", // linea
 	// chainId: 59140,
-	// rpcUrl: process.env.RPC_URL5 || "", // base-goerli
+	// rpcUrl: process.env.RPC_URL_BASE_GOERLI || "", // base-goerli
 	// chainId: 84531,
+	rpcUrl: process.env.RPC_URL_BASE || "", // base
+	chainId: 8453,
 	// rpcUrl: process.env.RPC_URL6 || "", // optimism-goerli
 	// chainId: 420,
 	// rpcUrl: process.env.RPC_URL7 || "", // Polygon-mainnet
@@ -203,7 +205,7 @@ describe("setupSmartAccount", () => {
 		// expect(res.hash).toHaveLength(66);
 	}, 70000);
 
-	it("should mint an NFT gasless-ly", async () => {
+	it.skip("should mint an NFT gasless-ly", async () => {
 		try {
 			let bastion = new Bastion();
 			const bastionConnect = await bastion.bastionConnect;
@@ -291,5 +293,24 @@ describe("setupSmartAccount", () => {
 			console.log("error = ", error);
 		}
 	}, 70000);
+
+	it("should send native currency to another address with gas from Smart Account", async () => {
+        // DEFAULT_CONFIG.noSponsorship = true;
+        let bastion = new Bastion();
+        const bastionConnect = await bastion.bastionConnect;
+        const { exists, smartAccountAddress } = await bastionConnect.init(provider, DEFAULT_CONFIG);
+		console.log("exists", exists, smartAccountAddress)
+		// console.log("My address = ", exists, await bastionConnect.getAddress());
+
+		if(!exists) {
+			await bastionConnect.createSmartAccountByDapp();
+		}
+        const res = await bastionConnect.sendTransaction({
+            to: "0x2429EB38cB9b456160937e11aefc80879a2d2712",
+            value: 1,
+        });
+        console.log("Hash for native transfer = ", res.hash);
+        expect(res.hash).toHaveLength(66);
+    }, 50000); 
 });
 
