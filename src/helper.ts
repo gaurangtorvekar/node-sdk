@@ -1,15 +1,15 @@
 import { TransactionReceipt } from "@ethersproject/providers";
 import { BigNumber } from "ethers";
 import { defineChain } from "viem";
-import { mainnet, polygon, arbitrum, base, polygonMumbai, arbitrumGoerli, baseGoerli, scrollTestnet, lineaTestnet, optimismGoerli  } from "viem/chains";
+import { mainnet, polygon, arbitrum, base, polygonMumbai, arbitrumGoerli, baseGoerli, scrollTestnet, lineaTestnet, optimismGoerli, goerli } from "viem/chains";
 
-export const mainnetIds = [1,137,42162,534352,8453];
+export const mainnetIds = [1, 137, 42162, 534352, 8453];
 
 export const getChainName = async (chainId) => {
 	switch (chainId) {
-		case 1: 
+		case 1:
 			return "ethereum";
-		case 137: 
+		case 137:
 			return "polygon";
 		case 42162:
 			return "arbitrum";
@@ -31,9 +31,10 @@ export const getChainName = async (chainId) => {
 			return "base";
 		case 420:
 			return "optimism-goerli";
+		case 5:
+			return "goerli";
 	}
 };
-
 
 export const checkChainCompatibility = async (chainId) => {
 	const chainName = await getChainName(chainId);
@@ -65,11 +66,11 @@ export const createDummyTransactionReceipt = async () => {
 	return transactionReceipt;
 };
 
-export const getViemChain =async(chainId:number) =>{
+export const getViemChain = async (chainId: number) => {
 	switch (chainId) {
-		case 1: 
+		case 1:
 			return mainnet;
-		case 137: 
+		case 137:
 			return polygon;
 		case 42162:
 			return arbitrum;
@@ -91,40 +92,42 @@ export const getViemChain =async(chainId:number) =>{
 			return base;
 		case 420:
 			return optimismGoerli;
+		case 5:
+			return goerli;
 	}
-	
-}
+};
 
 const scroll = /*#__PURE__*/ defineChain({
 	id: 534_352,
-	name: 'Scroll',
-	network: 'scroll',
-	nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+	name: "Scroll",
+	network: "scroll",
+	nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
 	rpcUrls: {
-	  default: {
-		http: ['https://rpc.scroll.io'],
-		webSocket: ['wss://wss-rpc.scroll.io/ws'],
-	  },
-	  public: {
-		http: ['https://rpc.scroll.io'],
-		webSocket: ['wss://wss-rpc.scroll.io/ws'],
-	  },
+		default: {
+			http: ["https://rpc.scroll.io"],
+			webSocket: ["wss://wss-rpc.scroll.io/ws"],
+		},
+		public: {
+			http: ["https://rpc.scroll.io"],
+			webSocket: ["wss://wss-rpc.scroll.io/ws"],
+		},
 	},
 	blockExplorers: {
-	  default: {
-		name: 'Scrollscan',
-		url: 'https://scrollscan.com',
-	  },
-	  blockscout: {
-		name: 'Blockscout',
-		url: 'https://blockscout.scroll.io',
-	  },
+		default: {
+			name: "Scrollscan",
+			url: "https://scrollscan.com",
+		},
+		blockscout: {
+			name: "Blockscout",
+			url: "https://blockscout.scroll.io",
+		},
 	},
 	contracts: {
-	  multicall3: {
-		address: '0xca11bde05977b3631167028862be2a173976ca11',
-		blockCreated: 14,
-	  },
+		multicall3: {
+			address: "0xca11bde05977b3631167028862be2a173976ca11",
+			blockCreated: 14,
+		},
 	},
 	testnet: false,
-  })
+});
+
