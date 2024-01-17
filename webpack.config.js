@@ -1,4 +1,5 @@
 const path = require("path");
+const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
 	entry: "./src/index.ts", // The entry point of your library
@@ -8,8 +9,6 @@ module.exports = {
 		library: "BastionWallet",
 		libraryTarget: "umd", // supports both CommonJS and AMD
 		globalObject: "this",
-		publicPath: '',
-		chunkFilename: "BastionWallet.bundle.js",
 	},
 	resolve: {
 		extensions: [".ts", ".tsx", ".js"],
@@ -23,5 +22,6 @@ module.exports = {
 			},
 		],
 	},
-	target: 'web',
+	target: 'node',
+	externals: [nodeExternals()],
 };
