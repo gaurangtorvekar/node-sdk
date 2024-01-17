@@ -1,7 +1,7 @@
 import { TransactionReceipt } from "@ethersproject/providers";
 import { BigNumber } from "ethers";
 import { defineChain } from "viem";
-import { mainnet, polygon, arbitrum, base, polygonMumbai, arbitrumGoerli, baseGoerli, scrollTestnet, lineaTestnet, optimismGoerli, goerli } from "viem/chains";
+import { mainnet, polygon, arbitrum, base, polygonMumbai, arbitrumGoerli, baseGoerli, scrollTestnet, lineaTestnet, optimismGoerli, goerli, sepolia } from "viem/chains";
 
 export const mainnetIds = [1, 137, 42162, 534352, 8453];
 
@@ -33,6 +33,8 @@ export const getChainName = async (chainId) => {
 			return "optimism-goerli";
 		case 5:
 			return "goerli";
+		case 11155111:
+			return "sepolia"
 	}
 };
 
@@ -94,6 +96,8 @@ export const getViemChain = async (chainId: number) => {
 			return optimismGoerli;
 		case 5:
 			return goerli;
+		case 11155111:
+			return sepolia;
 	}
 };
 
