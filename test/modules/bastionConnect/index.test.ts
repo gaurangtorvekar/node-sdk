@@ -28,8 +28,10 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 	// chainId: 420,
 	// rpcUrl: process.env.RPC_URL7 || "", // Polygon-mainnet
 	// chainId: 137,
-	rpcUrl: process.env.RPC_URL8 || "", // Goerli
-	chainId: 5,
+	// rpcUrl: process.env.RPC_URL8 || "", // Goerli
+	// chainId: 5,
+	rpcUrl: process.env.RPC_URL_SEPOLIA || "", // sepolia
+	chainId: 11155111,
 	apiKey: process.env.BASTION_API_KEY || "",
 };
 
