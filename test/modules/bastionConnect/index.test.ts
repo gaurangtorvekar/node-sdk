@@ -14,8 +14,8 @@ let BastionSampleNFT = "0xb390e253e43171a11a6afcb04e340fde5ae1b0a1";
 
 const DEFAULT_CONFIG: BastionSignerOptions = {
 	privateKey: process.env.PRIVATE_KEY || "",
-	rpcUrl: process.env.RPC_URL1 || "", //mumbai
-	chainId: 80001,
+	// rpcUrl: process.env.RPC_URL1 || "", //mumbai
+	// chainId: 80001,
 	// rpcUrl: process.env.RPC_URL2 || "", // arb-goerli
 	// chainId: 421613,
 	// rpcUrl: process.env.RPC_URL3 || "", // scroll
@@ -28,6 +28,8 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 	// chainId: 420,
 	// rpcUrl: process.env.RPC_URL7 || "", // Polygon-mainnet
 	// chainId: 137,
+	rpcUrl: process.env.RPC_URL_SEPOLIA || "", // sepolia
+	chainId: 11155111,
 	apiKey: process.env.BASTION_API_KEY || "",
 };
 

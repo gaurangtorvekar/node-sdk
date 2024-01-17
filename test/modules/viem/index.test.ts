@@ -5,7 +5,7 @@ import { Bastion } from "../../../src/index";
 import { describe, beforeEach, it, expect } from "@jest/globals";
 import { skip } from "node:test";
 import { ERC721_ABI } from "../../utils/ERC721_ABI";
-import {polygonMumbai, arbitrumGoerli,scrollTestnet, lineaTestnet, baseGoerli, optimismGoerli, base} from 'viem/chains'
+import {polygonMumbai, arbitrumGoerli,scrollTestnet, lineaTestnet, baseGoerli, optimismGoerli, base, sepolia} from 'viem/chains'
 import { BastionSignerOptions } from '../../../src/modules/bastionConnect';
 import { ethers } from 'ethers';
 import {abi} from "./ERC721ABI"  ;
@@ -27,10 +27,12 @@ const DEFAULT_CONFIG: BastionSignerOptions = {
 	// chainId: 59140,
 	// rpcUrl: process.env.RPC_URL_BASE_GOERLI || "", // base-goerli
 	// chainId: 84531,
-	rpcUrl: process.env.RPC_URL_BASE || "", // base
-	chainId: 8453,
+	// rpcUrl: process.env.RPC_URL_BASE || "", // base
+	// chainId: 8453,
 	// rpcUrl: process.env.RPC_URL6 || "", // optimism-goerli
 	// chainId: 420,
+	rpcUrl: process.env.RPC_URL_SEPOLIA || "", // sepolia
+	chainId: 11155111,
 	apiKey: process.env.BASTION_API_KEY || "",
 };
 
@@ -50,6 +52,8 @@ const getViemChain = (chainId) => {
 			return optimismGoerli;
 		case 8453:
 			return base;
+		case 11155111:
+			return sepolia;
 	}
 }
 
